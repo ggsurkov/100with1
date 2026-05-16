@@ -1,0 +1,76 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+}
+
+.header {
+  background: var(--bg-secondary);
+  padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
+  text-decoration: none;
+  background: linear-gradient(to right, #3b82f6, #10b981);
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.nav {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+
+  a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.3s;
+
+    &:hover,
+    &.active {
+      color: white;
+    }
+
+    &.gameMode {
+      color: var(--success);
+      border: 1px solid var(--success);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+
+      &:hover {
+        background: var(--success);
+        color: white;
+      }
+    }
+  }
+
+  .logout {
+    color: var(--danger);
+    background: none;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+  }
+}
+
+.main {
+  flex: 1;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
