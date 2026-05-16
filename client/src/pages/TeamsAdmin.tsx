@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import common from './pagesStyles.module.scss';
-import styles from './TeamsAdmin.module.scss';
 
 interface Team {
   _id: string;
@@ -41,18 +40,18 @@ export default function TeamsAdmin() {
     <div className={common.card}>
       <h2 className={common.title}>Manage Teams</h2>
       <form onSubmit={handleSubmit} className={common.form}>
-        <input 
-          placeholder="Team Title" 
-          value={title} 
-          onChange={e => setTitle(e.target.value)} 
-          className={common.input} 
-          required 
+        <input
+          placeholder="Team Title"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          className={common.input}
+          required
         />
-        <input 
-          placeholder="Description" 
-          value={description} 
-          onChange={e => setDescription(e.target.value)} 
-          className={common.input} 
+        <input
+          placeholder="Description"
+          value={description}
+          onChange={e => setDescription(e.target.value)}
+          className={common.input}
         />
         <button type="submit" className={common.button}>Add Team</button>
       </form>
