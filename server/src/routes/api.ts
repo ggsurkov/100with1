@@ -1,6 +1,8 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import Admin from '../models/Admin';
+import bcrypt from 'bcrypt';
+import mongoose from 'mongoose';
+import User, { DEFAULT_PERMISSIONS_BY_ROLE, Permission, UserRole } from '../models/User';
 import Team from '../models/Team';
 import Game from '../models/Game';
 import Launch from '../models/Launch';
@@ -23,17 +25,74 @@ const authMiddleware = (req: any, res: any, next: any) => {
   }
 };
 
+const requireRole = (roles: UserRole[]) => (req: any, res: any, next: any) => {
+  if (!roles.includes(req.user?.role)) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+  next();
+};
+
+const requirePermission = (permission: Permission) => (req: any, res: any, next: any) => {
+  if (req.user?.role === 'admin' || req.user?.permissions?.includes(permission)) {
+    return next();
+  }
+  res.status(403).json({ message: 'Forbidden' });
+};
+
 // Login
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const admin = await Admin.findOne({ username });
-  
-  if (admin && admin.passwordHash === password) {
-    const token = jwt.sign({ id: admin._id }, JWT_SECRET, { expiresIn: '1d' });
-    res.json({ token });
+  const { email, password } = req.body;
+  const user = await User.findOne({ email: email?.toLowerCase().trim() });
+
+  if (user && (await bcrypt.compare(password || '', user.passwordHash))) {
+    const payload = { id: user._id, email: user.email, role: user.role, permissions: user.permissions };
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
+    res.json({ token, user: payload });
   } else {
     res.status(401).json({ message: 'Invalid credentials' });
   }
+});
+
+// User management (admin only)
+router.get('/users', authMiddleware, requireRole(['admin']), async (req: any, res) => {
+  const users = await User.find({ _id: { $ne: req.user.id } }).select('-passwordHash');
+  res.json(users);
+});
+
+router.post('/users', authMiddleware, requireRole(['admin']), async (req, res) => {
+  const { email, password, role, permissions } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Email and password are required' });
+  }
+  try {
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = new User({
+      email: String(email).toLowerCase().trim(),
+      passwordHash,
+      role: role || 'member',
+      permissions,
+    });
+    await user.save();
+    const { passwordHash: _omit, ...safeUser } = user.toObject();
+    res.json(safeUser);
+  } catch (e: any) {
+    if (e.code === 11000) {
+      return res.status(400).json({ message: 'A user with this email already exists' });
+    }
+    res.status(400).json({ message: 'Failed to create user' });
+  }
+});
+
+router.delete('/users/:id', authMiddleware, requireRole(['admin']), async (req: any, res) => {
+  const { id } = req.params;
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid ID provided' });
+  }
+  if (id === req.user.id) {
+    return res.status(400).json({ message: 'You cannot delete your own account' });
+  }
+  await User.findByIdAndDelete(id);
+  res.json({ message: 'Deleted' });
 });
 
 // Teams CRUD
@@ -55,13 +114,13 @@ const validateTeam = (req: any, res: any, next: any) => {
   next();
 };
 
-router.post('/teams', authMiddleware, validateTeam, async (req, res) => {
+router.post('/teams', authMiddleware, requirePermission('CREATE'), validateTeam, async (req, res) => {
   const team = new Team(req.body);
   await team.save();
   res.json(team);
 });
 
-router.put('/teams/:id', authMiddleware, validateTeam, async (req, res) => {
+router.put('/teams/:id', authMiddleware, requirePermission('EDIT'), validateTeam, async (req, res) => {
   const team = await Team.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json(team);
 });
@@ -72,7 +131,7 @@ router.delete('/teams/:id', authMiddleware, async (req, res) => {
 });
 
 // Image upload
-router.post('/upload', authMiddleware, (req: any, res) => {
+router.post('/upload', authMiddleware, requirePermission('CREATE'), (req: any, res) => {
   upload.single('image')(req, res, (err: any) => {
     if (err) {
       console.error('[Upload] Error:', err.message);
@@ -124,13 +183,13 @@ router.get('/games/:id', async (req, res) => {
   }
 });
 
-router.post('/games', authMiddleware, validateGame, async (req, res) => {
+router.post('/games', authMiddleware, requirePermission('CREATE'), validateGame, async (req, res) => {
   const game = new Game(req.body);
   await game.save();
   res.json(game);
 });
 
-router.put('/games/:id', authMiddleware, validateGame, async (req, res) => {
+router.put('/games/:id', authMiddleware, requirePermission('EDIT'), validateGame, async (req, res) => {
   const game = await Game.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json(game);
 });

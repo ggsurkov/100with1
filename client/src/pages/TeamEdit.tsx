@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import common from './pagesStyles.module.scss';
 import styles from './TeamsAdmin.module.scss';
 
 export default function TeamEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -61,9 +63,11 @@ export default function TeamEdit() {
         <button type="button" onClick={() => navigate('/admin/teams')} className={common.button} style={{ background: 'rgba(255,255,255,0.1)' }}>
           Cancel
         </button>
-        <button type="button" onClick={handleUpdate} className={common.button}>
-          Save Changes
-        </button>
+        {hasPermission('EDIT') && (
+          <button type="button" onClick={handleUpdate} className={common.button}>
+            Save Changes
+          </button>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import common from './pagesStyles.module.scss';
 import styles from './GamesAdmin.module.scss'; // keeping unique specific styles
 import { optimizeCloudinaryUrl } from '../utils/image';
@@ -9,6 +10,7 @@ import { optimizeCloudinaryUrl } from '../utils/image';
 export default function GameEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [rounds, setRounds] = useState<any[]>([]);
@@ -151,20 +153,22 @@ export default function GameEdit() {
 
                 <div className={styles.imageSection}>
                   <input className={common.input} placeholder="Image URL (optional)" value={q.imageUrl || ''} onChange={e => updateQuestion(rIndex, qIndex, 'imageUrl', e.target.value || undefined)} />
-                  <label className={styles.uploadBtn}>
-                    {uploadingKey === `${rIndex}-${qIndex}` ? 'Uploading...' : 'Upload Image'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={{ display: 'none' }}
-                      disabled={uploadingKey === `${rIndex}-${qIndex}`}
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) handleImageUpload(rIndex, qIndex, file);
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
+                  {hasPermission('CREATE') && (
+                    <label className={styles.uploadBtn}>
+                      {uploadingKey === `${rIndex}-${qIndex}` ? 'Uploading...' : 'Upload Image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        disabled={uploadingKey === `${rIndex}-${qIndex}`}
+                        onChange={e => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(rIndex, qIndex, file);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  )}
                   {q.imageUrl && (
                     <div className={styles.imagePreviewWrap}>
                       <img
@@ -202,7 +206,9 @@ export default function GameEdit() {
           <button onClick={addRound} className={`${styles.btnAction} ${styles.addR}`} style={{ marginTop: 0 }}>+ Add Round</button>
           <div style={{ flex: 1 }}></div>
           <button onClick={() => navigate('/admin/games')} className={styles.saveBtn} style={{ background: 'rgba(255,255,255,0.1)', marginTop: 0 }}>Cancel</button>
-          <button onClick={handleUpdate} className={styles.saveBtn} style={{ marginTop: 0 }}>Save Changes</button>
+          {hasPermission('EDIT') && (
+            <button onClick={handleUpdate} className={styles.saveBtn} style={{ marginTop: 0 }}>Save Changes</button>
+          )}
         </div>
       </div>
 
