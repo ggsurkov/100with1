@@ -172,6 +172,14 @@ router.delete('/games/:id', authMiddleware, requirePermission('CREATE'), async (
 });
 
 // Launches CRUD
+// Public: powers the /results page — exposes only finished games (final scores), no auth required.
+router.get('/launches', async (req, res) => {
+  const launches = await Launch.find({ status: 'finished' })
+    .populate('gameId', 'title')
+    .sort({ updatedAt: -1 });
+  res.json(launches);
+});
+
 router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req, res) => {
   const { gameId } = req.body;
   if (!gameId || gameId === 'undefined') return res.status(400).json({ message: 'Invalid gameId provided' });

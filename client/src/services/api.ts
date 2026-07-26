@@ -17,11 +17,12 @@ api.interceptors.response.use(
   response => response,
   error => {
     const isLoginRequest = error.config?.url?.includes('/login');
-    if (error.response?.status === 401 && !isLoginRequest) {
+    const isOnPublicPage = window.location.pathname === '/auth' || window.location.pathname === '/';
+    if (error.response?.status === 401 && !isLoginRequest && !isOnPublicPage) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       toast.error('Сессия истекла или требуется авторизация');
-      window.location.href = '/';
+      window.location.href = '/auth';
     }
     return Promise.reject(error);
   }

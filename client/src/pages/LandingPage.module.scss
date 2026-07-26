@@ -1,0 +1,256 @@
+.page {
+  min-height: 100vh;
+  color: #f1f5f9;
+  background: radial-gradient(circle at top, #1a1035, #050109 70%);
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid rgba(217, 70, 239, 0.2);
+  background: rgba(10, 6, 20, 0.8);
+  backdrop-filter: blur(12px);
+}
+
+.headerInner {
+  max-width: 72rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+
+  .logoIcon {
+    font-size: 1.5rem;
+  }
+
+  .logoAccent {
+    color: #e879f9;
+  }
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.navLink {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #f0abfc;
+  }
+
+  @media (max-width: 639px) {
+    display: none;
+  }
+}
+
+.loginBtn {
+  border-radius: 999px;
+  background: #d946ef;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 0 20px rgba(217, 70, 239, 0.5);
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: #e879f9;
+  }
+}
+
+.hero {
+  max-width: 64rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 6rem 1.5rem;
+  text-align: center;
+
+  @media (min-width: 640px) {
+    padding: 8rem 1.5rem;
+  }
+}
+
+.badge {
+  border-radius: 999px;
+  border: 1px solid rgba(163, 230, 53, 0.3);
+  background: rgba(163, 230, 53, 0.1);
+  padding: 0.25rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #bef264;
+}
+
+.title {
+  max-width: 48rem;
+  font-size: 2.25rem;
+  font-weight: 900;
+  line-height: 1.2;
+
+  @media (min-width: 640px) {
+    font-size: 3.75rem;
+  }
+}
+
+.subtitle {
+  max-width: 42rem;
+  font-size: 1.125rem;
+  color: #cbd5e1;
+
+  @media (min-width: 640px) {
+    font-size: 1.25rem;
+  }
+}
+
+.heroCta {
+  margin-top: 1rem;
+  border-radius: 999px;
+  background: linear-gradient(to right, #d946ef, #fbbf24);
+  padding: 1rem 2.5rem;
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: #020617;
+  box-shadow: 0 0 40px rgba(217, 70, 239, 0.45);
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.features {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 5rem 1.5rem;
+}
+
+.featuresTitle {
+  margin-bottom: 2.5rem;
+  text-align: center;
+  font-size: 1.875rem;
+  font-weight: 900;
+
+  @media (min-width: 640px) {
+    font-size: 2.25rem;
+  }
+}
+
+.featuresGrid {
+  display: grid;
+  gap: 1.5rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.featureCard {
+  border-radius: 1rem;
+  border: 1px solid rgba(217, 70, 239, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    border-color: rgba(232, 121, 249, 0.5);
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.featureIcon {
+  margin-bottom: 1rem;
+  font-size: 2.25rem;
+}
+
+.featureTitle {
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.featureDescription {
+  color: #cbd5e1;
+}
+
+.resultsTeaser {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: 0 1.5rem 6rem;
+  text-align: center;
+}
+
+.resultsCard {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(163, 230, 53, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2.5rem;
+  backdrop-filter: blur(8px);
+}
+
+.resultsText {
+  margin-bottom: 1.5rem;
+  font-size: 1.125rem;
+  color: #e2e8f0;
+
+  @media (min-width: 640px) {
+    font-size: 1.25rem;
+  }
+}
+
+.resultsBtn {
+  display: inline-block;
+  border-radius: 999px;
+  border: 2px solid #a3e635;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #bef264;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: #a3e635;
+    color: #020617;
+  }
+}
+
+.footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.copyright {
+  font-size: 0.875rem;
+  color: #94a3b8;
+}
+
+.disclaimer {
+  max-width: 42rem;
+  margin: 0.5rem auto 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}

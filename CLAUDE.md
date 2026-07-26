@@ -14,10 +14,12 @@
 - **Frontend**: React 19, TypeScript, Vite, React Router 7, Axios,
   react-hot-toast.
 - **Стилизация — важное расхождение с типовым стеком**: в проекте **нет
-  TailwindCSS**. Каждая страница/компонент стилизуется через co-located
-  CSS Modules (`Component.module.scss`, sass). Если когда-нибудь понадобится
-  Tailwind — заводить как осознанное решение, а не по умолчанию; см.
-  [`.agents/skills/frontend-react.md`](.agents/skills/frontend-react.md).
+  TailwindCSS и не должно быть** (было единожды подключено и полностью
+  удалено — не переоткрывай этот вопрос без явного запроса пользователя).
+  Каждая страница/компонент стилизуется **только** через co-located
+  CSS Modules (`Component.module.scss`, sass); см.
+  [`.agents/skills/frontend-react.md`](.agents/skills/frontend-react.md) и
+  правило №6 ниже.
 - **Файлы/изображения**: Cloudinary (SDK + multer), см.
   [`.agents/tools/cloudinary.md`](.agents/tools/cloudinary.md).
 - **Деплой**: Render (сервер, эфемерная ФС) + MongoDB Atlas free tier.
@@ -32,7 +34,19 @@
    - Все коммиты, стейджинг, ветки и пуши на GitHub делает исключительно человек вручную.
    - По завершении задачи просто напиши резюме сделанных изменений и НЕ пытайся сделать `git commit` или `git status`.
 
-Подробности и обоснование: [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md), правило №4.
+Подробности и обоснование: [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md), правило №6.
+
+## 🛑 СТРОГИЙ ЗАПРЕТ НА TAILWIND CSS
+
+- Категорически запрещено использовать Tailwind CSS и классы Tailwind в
+  JSX/TSX.
+- Стилизация компонентов выполняется **ТОЛЬКО с помощью SCSS Modules**
+  (`[ComponentName].module.scss`).
+- Использование глобальных стилей разрешено только для базовых сбросов
+  (reset/CSS-переменные) в `src/index.scss`.
+
+Подробности и обоснование: [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md),
+правило №5, и [`.agents/skills/frontend-react.md`](.agents/skills/frontend-react.md).
 
 ## Guardrails (сводка — не сокращай эти правила без ведома пользователя)
 
@@ -59,6 +73,10 @@
 5. **Никаких редиректов сразу после сохранения в Check Round.** Ведущий
    должен увидеть подтверждение (`✓ Saved`) прежде чем уйти со страницы;
    навигация — только по явному действию (Next/End/Back). Подробности:
+   [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md).
+6. **Никакого Tailwind CSS.** Только SCSS Modules co-located с компонентом;
+   глобальные стили — исключительно базовые сбросы/CSS-переменные в
+   `src/index.scss`. Подробности:
    [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md).
 
 ## Карта `.agents/`
