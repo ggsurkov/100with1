@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import styles from './RoundCheck.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
 import { playRevealSound, isMuted, toggleMute, playTestSound } from '../utils/audio';
@@ -9,6 +10,7 @@ import { playRevealSound, isMuted, toggleMute, playTestSound } from '../utils/au
 export default function RoundCheck() {
   const { id, roundId, launchId } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const [game, setGame] = useState<any>(null);
   const [launch, setLaunch] = useState<any>(null);
   const [qIndex, setQIndex] = useState(0);
@@ -66,6 +68,7 @@ export default function RoundCheck() {
   };
 
   const toggleAnswer = (idx: number) => {
+    if (!hasPermission('EDIT')) return;
     setRevealed(prev => {
       const next = !prev[idx];
       if (next) playRevealSound();
@@ -177,7 +180,7 @@ export default function RoundCheck() {
                   <span className={styles.points}>
                     {revealed[idx] ? answer.points : '?'}
                   </span>
-                  {launch && (
+                  {launch && hasPermission('EDIT') && (
                     <div className={styles.popoverWrap} ref={openPopover === idx ? popoverRef : null}>
                       <button
                         className={`${styles.addTeamBtn} ${selectedTeams.size > 0 ? styles.active : ''}`}
@@ -219,7 +222,7 @@ export default function RoundCheck() {
         })}
       </div>
 
-      {launch && (
+      {launch && hasPermission('EDIT') && (
         <button
           onClick={handleCalculateAndSave}
           className={`${styles.btn} ${styles.calcBtn} ${isSaved ? styles.saved : ''}`}
@@ -230,9 +233,11 @@ export default function RoundCheck() {
       )}
 
       <div className={styles.controls}>
-        <button onClick={handleNext} className={`${styles.btn} ${styles.next}`}>
-          {isLastQuestion ? 'End Round' : 'Next Question'}
-        </button>
+        {hasPermission('EDIT') && (
+          <button onClick={handleNext} className={`${styles.btn} ${styles.next}`}>
+            {isLastQuestion ? 'End Round' : 'Next Question'}
+          </button>
+        )}
         <Link to={launchId ? `/launch/${launchId}/rounds` : `/game/${id}/rounds`} className={`${styles.btn} ${styles.back}`}>
           Back to Rounds
         </Link>

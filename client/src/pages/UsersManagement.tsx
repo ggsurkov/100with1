@@ -16,10 +16,10 @@ interface ManagedUser {
 }
 
 const ALL_PERMISSIONS: Permission[] = ['CREATE', 'EDIT', 'VIEW'];
-const ALL_ROLES: UserRole[] = ['admin', 'editor', 'member'];
+const ALL_ROLES: UserRole[] = ['admin', 'master', 'editor', 'member'];
 
 export default function UsersManagement() {
-  const { isAdmin } = useAuth();
+  const { canManageUsers, hasPermission } = useAuth();
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,11 +36,11 @@ export default function UsersManagement() {
   };
 
   useEffect(() => {
-    if (isAdmin()) fetchUsers();
+    if (canManageUsers()) fetchUsers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (!isAdmin()) {
+  if (!canManageUsers()) {
     return <Navigate to="/admin/teams" replace />;
   }
 
@@ -127,7 +127,7 @@ export default function UsersManagement() {
           ))}
         </div>
 
-        <button type="submit" className={common.button}>Create User</button>
+        <button type="submit" className={`${common.button} ${styles.createBtn}`}>Create User</button>
       </form>
 
       <table className={common.table}>
@@ -148,7 +148,9 @@ export default function UsersManagement() {
               <td>{user.permissions?.join(', ')}</td>
               <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
               <td>
-                <button onClick={() => handleDelete(user._id)} className={common.deleteBtn}>Delete</button>
+                {hasPermission('CREATE') && (
+                  <button onClick={() => handleDelete(user._id)} className={common.deleteBtn}>Delete</button>
+                )}
               </td>
             </tr>
           ))}

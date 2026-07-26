@@ -160,7 +160,9 @@ export default function GamesAdmin() {
                 {hasPermission('EDIT') && (
                   <Link to={`/admin/games/${game._id}`} className={common.editBtn}>Edit</Link>
                 )}
-                <button onClick={() => handleDelete(game._id)} className={common.deleteBtn}>Delete</button>
+                {hasPermission('CREATE') && (
+                  <button onClick={() => handleDelete(game._id)} className={common.deleteBtn}>Delete</button>
+                )}
               </td>
             </tr>
           ))}

@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'editor' | 'member';
+export type UserRole = 'admin' | 'master' | 'editor' | 'member';
 export type Permission = 'CREATE' | 'EDIT' | 'VIEW';
 
 export interface User {
@@ -10,6 +10,7 @@ export interface User {
 
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, Permission[]> = {
   admin: ['CREATE', 'EDIT', 'VIEW'],
+  master: ['CREATE', 'EDIT', 'VIEW'],
   editor: ['EDIT', 'VIEW'],
   member: ['VIEW'],
 };

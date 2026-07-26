@@ -2,42 +2,14 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
-import User, { DEFAULT_PERMISSIONS_BY_ROLE, Permission, UserRole } from '../models/User';
+import User, { DEFAULT_PERMISSIONS_BY_ROLE } from '../models/User';
 import Team from '../models/Team';
 import Game from '../models/Game';
 import Launch from '../models/Launch';
 import upload from '../middleware/upload';
+import { authMiddleware, requireRole, requirePermission, JWT_SECRET } from '../middleware/auth';
 
 const router = express.Router();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
-
-// Auth middleware
-const authMiddleware = (req: any, res: any, next: any) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'Unauthorized' });
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
-const requireRole = (roles: UserRole[]) => (req: any, res: any, next: any) => {
-  if (!roles.includes(req.user?.role)) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-  next();
-};
-
-const requirePermission = (permission: Permission) => (req: any, res: any, next: any) => {
-  if (req.user?.role === 'admin' || req.user?.permissions?.includes(permission)) {
-    return next();
-  }
-  res.status(403).json({ message: 'Forbidden' });
-};
 
 // Login
 router.post('/login', async (req, res) => {
@@ -53,13 +25,13 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// User management (admin only)
-router.get('/users', authMiddleware, requireRole(['admin']), async (req: any, res) => {
+// User management (admin/master only)
+router.get('/users', authMiddleware, requireRole(['admin', 'master']), async (req: any, res) => {
   const users = await User.find({ _id: { $ne: req.user.id } }).select('-passwordHash');
   res.json(users);
 });
 
-router.post('/users', authMiddleware, requireRole(['admin']), async (req, res) => {
+router.post('/users', authMiddleware, requireRole(['admin', 'master']), async (req, res) => {
   const { email, password, role, permissions } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: 'Email and password are required' });
@@ -83,7 +55,7 @@ router.post('/users', authMiddleware, requireRole(['admin']), async (req, res) =
   }
 });
 
-router.delete('/users/:id', authMiddleware, requireRole(['admin']), async (req: any, res) => {
+router.delete('/users/:id', authMiddleware, requireRole(['admin', 'master']), requirePermission('CREATE'), async (req: any, res) => {
   const { id } = req.params;
   if (!mongoose.isValidObjectId(id)) {
     return res.status(400).json({ message: 'Invalid ID provided' });
@@ -96,7 +68,7 @@ router.delete('/users/:id', authMiddleware, requireRole(['admin']), async (req: 
 });
 
 // Teams CRUD
-router.get('/teams', async (req, res) => {
+router.get('/teams', authMiddleware, requirePermission('VIEW'), async (req, res) => {
   const teams = await Team.find();
   res.json(teams);
 });
@@ -125,7 +97,7 @@ router.put('/teams/:id', authMiddleware, requirePermission('EDIT'), validateTeam
   res.json(team);
 });
 
-router.delete('/teams/:id', authMiddleware, async (req, res) => {
+router.delete('/teams/:id', authMiddleware, requirePermission('CREATE'), async (req, res) => {
   await Team.findByIdAndDelete(req.params.id);
   res.json({ message: 'Deleted' });
 });
@@ -167,7 +139,7 @@ const validateGame = (req: any, res: any, next: any) => {
   }
   next();
 };
-router.get('/games', async (req, res) => {
+router.get('/games', authMiddleware, requirePermission('VIEW'), async (req, res) => {
   const games = await Game.find();
   res.json(games);
 });
@@ -194,13 +166,13 @@ router.put('/games/:id', authMiddleware, requirePermission('EDIT'), validateGame
   res.json(game);
 });
 
-router.delete('/games/:id', authMiddleware, async (req, res) => {
+router.delete('/games/:id', authMiddleware, requirePermission('CREATE'), async (req, res) => {
   await Game.findByIdAndDelete(req.params.id);
   res.json({ message: 'Deleted' });
 });
 
 // Launches CRUD
-router.post('/launches', authMiddleware, async (req, res) => {
+router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req, res) => {
   const { gameId } = req.body;
   if (!gameId || gameId === 'undefined') return res.status(400).json({ message: 'Invalid gameId provided' });
   try {
@@ -212,7 +184,7 @@ router.post('/launches', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/launches/:id', async (req, res) => {
+router.get('/launches/:id', authMiddleware, requirePermission('VIEW'), async (req, res) => {
   const { id } = req.params;
   if (!id || id === 'undefined') return res.status(400).json({ message: 'Invalid ID provided' });
   try {
@@ -223,7 +195,7 @@ router.get('/launches/:id', async (req, res) => {
   }
 });
 
-router.put('/launches/:id', authMiddleware, async (req, res) => {
+router.put('/launches/:id', authMiddleware, requirePermission('EDIT'), async (req, res) => {
   const { id } = req.params;
   if (!id || id === 'undefined') return res.status(400).json({ message: 'Invalid ID provided' });
   try {
@@ -232,6 +204,15 @@ router.put('/launches/:id', authMiddleware, async (req, res) => {
   } catch (e) {
     res.status(400).json({ message: 'Failed to update launch' });
   }
+});
+
+router.delete('/launches/:id', authMiddleware, requirePermission('CREATE'), async (req, res) => {
+  const { id } = req.params;
+  if (!id || id === 'undefined' || !mongoose.isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid ID provided' });
+  }
+  await Launch.findByIdAndDelete(id);
+  res.json({ message: 'Deleted' });
 });
 
 export default router;

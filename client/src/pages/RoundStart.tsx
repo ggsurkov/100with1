@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import styles from './RoundStart.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
 import { startTimerMusic, stopTimerMusic, isMuted, toggleMute, playTestSound } from '../utils/audio';
@@ -8,6 +9,7 @@ import { startTimerMusic, stopTimerMusic, isMuted, toggleMute, playTestSound } f
 export default function RoundStart() {
   const { id, roundId, launchId } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
 
   const [game, setGame] = useState<any>(null);
   const [qIndex, setQIndex] = useState(0);
@@ -124,7 +126,7 @@ export default function RoundStart() {
         )}
 
         <div className={styles.controls}>
-          {timeLeft > 0 && (
+          {timeLeft > 0 && hasPermission('EDIT') && (
             <button
               onClick={() => setRunning(r => !r)}
               className={running ? styles.stop : styles.start}
@@ -132,9 +134,11 @@ export default function RoundStart() {
               {running ? 'Stop' : 'Start'}
             </button>
           )}
-          <button onClick={handleNext} className={styles.next}>
-            {isLastQuestion ? 'End Round' : 'Next Question'}
-          </button>
+          {hasPermission('EDIT') && (
+            <button onClick={handleNext} className={styles.next}>
+              {isLastQuestion ? 'End Round' : 'Next Question'}
+            </button>
+          )}
         </div>
 
         <Link to={backPath} className={styles.backLink}>Back to Rounds</Link>

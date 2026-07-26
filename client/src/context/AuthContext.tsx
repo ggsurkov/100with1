@@ -8,6 +8,7 @@ interface AuthContextValue {
   logout: () => void;
   hasPermission: (permission: Permission) => boolean;
   isAdmin: () => boolean;
+  canManageUsers: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -40,14 +41,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const hasPermission = useCallback(
-    (permission: Permission) => !!user && (user.role === 'admin' || user.permissions?.includes(permission)),
+    (permission: Permission) =>
+      !!user && (user.role === 'admin' || user.role === 'master' || user.permissions?.includes(permission)),
     [user]
   );
 
   const isAdmin = useCallback(() => user?.role === 'admin', [user]);
 
+  const canManageUsers = useCallback(() => user?.role === 'admin' || user?.role === 'master', [user]);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, hasPermission, isAdmin }}>
+    <AuthContext.Provider value={{ user, token, login, logout, hasPermission, isAdmin, canManageUsers }}>
       {children}
     </AuthContext.Provider>
   );

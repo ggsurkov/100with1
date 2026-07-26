@@ -13,6 +13,17 @@
   border-radius: 8px;
   color: white;
   text-transform: capitalize;
+
+  option {
+    color: #111827;
+    background: white;
+  }
+}
+
+.createBtn {
+  width: 100px;
+  flex: 0 0 auto;
+  align-self: flex-start;
 }
 
 .permissionsRow {

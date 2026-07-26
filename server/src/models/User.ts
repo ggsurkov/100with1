@@ -1,10 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export type UserRole = 'admin' | 'editor' | 'member';
+export type UserRole = 'admin' | 'master' | 'editor' | 'member';
 export type Permission = 'CREATE' | 'EDIT' | 'VIEW';
 
 export const DEFAULT_PERMISSIONS_BY_ROLE: Record<UserRole, Permission[]> = {
   admin: ['CREATE', 'EDIT', 'VIEW'],
+  master: ['CREATE', 'EDIT', 'VIEW'],
   editor: ['EDIT', 'VIEW'],
   member: ['VIEW'],
 };
@@ -21,7 +22,7 @@ const UserSchema: Schema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
-    role: { type: String, enum: ['admin', 'editor', 'member'], default: 'member' },
+    role: { type: String, enum: ['admin', 'master', 'editor', 'member'], default: 'member' },
     permissions: { type: [String], enum: ['CREATE', 'EDIT', 'VIEW'] },
   },
   { timestamps: true }

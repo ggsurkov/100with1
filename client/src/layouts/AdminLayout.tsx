@@ -5,7 +5,7 @@ import styles from './AdminLayout.module.scss';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
-  const { logout, isAdmin } = useAuth();
+  const { logout, canManageUsers } = useAuth();
 
   const handleLogout = () => {
     logout();
@@ -19,7 +19,7 @@ export default function AdminLayout() {
         <nav className={styles.nav}>
           <Link to="/admin/teams">Teams</Link>
           <Link to="/admin/games">Games</Link>
-          {isAdmin() && <Link to="/admin/users">Users</Link>}
+          {canManageUsers() && <Link to="/admin/users">Users</Link>}
           <Link to="/games" className={styles.gameMode}>Play Mode</Link>
           <button onClick={handleLogout} className={styles.logout}>Logout</button>
         </nav>

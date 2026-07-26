@@ -77,7 +77,9 @@ export default function TeamsAdmin() {
                 {hasPermission('EDIT') && (
                   <Link to={`/admin/teams/${team._id}`} className={common.editBtn}>Edit</Link>
                 )}
-                <button onClick={() => handleDelete(team._id)} className={common.deleteBtn}>Delete</button>
+                {hasPermission('CREATE') && (
+                  <button onClick={() => handleDelete(team._id)} className={common.deleteBtn}>Delete</button>
+                )}
               </td>
             </tr>
           ))}
