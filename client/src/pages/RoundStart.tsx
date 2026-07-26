@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import styles from './RoundStart.module.scss';
+import { optimizeCloudinaryUrl } from '../utils/image';
 
 export default function RoundStart() {
   const { id, roundId, launchId } = useParams();
@@ -86,6 +87,10 @@ export default function RoundStart() {
         </div>
 
         <h2 className={styles.question}>{question.title}</h2>
+
+        {question.imageUrl && (
+          <img src={optimizeCloudinaryUrl(question.imageUrl)} alt="" className={styles.questionImage} />
+        )}
 
         {timeLeft > 0 ? (
           <div className={`${styles.timer} ${timeLeft <= 10 ? styles.danger : ''}`}>

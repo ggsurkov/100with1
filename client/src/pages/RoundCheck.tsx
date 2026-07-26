@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import styles from './RoundCheck.module.scss';
+import { optimizeCloudinaryUrl } from '../utils/image';
 
 export default function RoundCheck() {
   const { id, roundId, launchId } = useParams();
@@ -132,6 +133,10 @@ export default function RoundCheck() {
         Question {qIndex + 1} / {round.questions.length}
       </div>
       <h2 className={styles.questionTitle}>{question.title}</h2>
+
+      {question.imageUrl && (
+        <img src={optimizeCloudinaryUrl(question.imageUrl)} alt="" className={styles.questionImage} />
+      )}
 
       <div className={styles.board}>
         {question.answers?.map((answer: any, idx: number) => {
