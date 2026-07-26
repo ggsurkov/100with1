@@ -31,7 +31,7 @@ export default function GameEdit() {
   };
   const addAnswer = (rIndex: number, qIndex: number) => {
     const newRounds = [...rounds];
-    newRounds[rIndex].questions[qIndex].answers.push({ text: '', points: 0, orderNumber: newRounds[rIndex].questions[qIndex].answers.length + 1, hide: true });
+    newRounds[rIndex].questions[qIndex].answers.push({ text: '', points: 0, orderNumber: newRounds[rIndex].questions[qIndex].answers.length + 1, hide: true, popularity: 0 });
     setRounds(newRounds);
   };
   const updateRound = (rIndex: number, field: string, value: any) => {
@@ -188,6 +188,7 @@ export default function GameEdit() {
                   <div key={aIndex} className={styles.answerRow}>
                     <input className={common.input} placeholder={`Answer ${a.orderNumber || aIndex + 1}`} value={a.text} onChange={e => updateAnswer(rIndex, qIndex, aIndex, 'text', e.target.value)} />
                     <input className={common.input} style={{ flex: '0 0 80px' }} type="number" placeholder="Pts" value={a.points} onChange={e => updateAnswer(rIndex, qIndex, aIndex, 'points', parseInt(e.target.value))} />
+                    <input className={common.input} style={{ flex: '0 0 90px' }} type="number" min="0" max="100" placeholder="Pop. %" value={a.popularity ?? 0} onChange={e => updateAnswer(rIndex, qIndex, aIndex, 'popularity', parseInt(e.target.value))} />
                   </div>
                 ))}
                 <button onClick={() => addAnswer(rIndex, qIndex)} className={`${styles.btnAction} ${styles.addA}`}>+ Add Answer</button>

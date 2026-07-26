@@ -6,6 +6,7 @@ export interface IAnswer {
   orderNumber: number;
   points: number;
   hide: boolean;
+  popularity?: number;
 }
 
 export interface IQuestion {
@@ -36,6 +37,7 @@ const AnswerSchema: Schema = new Schema({
   orderNumber: { type: Number, required: true },
   points: { type: Number, required: true },
   hide: { type: Boolean, default: true },
+  popularity: { type: Number, default: 0, min: 0, max: 100 },
 });
 
 const QuestionSchema: Schema = new Schema({

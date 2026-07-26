@@ -152,6 +152,9 @@ export default function RoundCheck() {
                     {revealed[idx] ? answer.text : '•••••••••••••'}
                   </span>
                 </div>
+                {revealed[idx] && (
+                  <span className={styles.popularity}>{answer.popularity || 0}%</span>
+                )}
                 <div className={styles.rightSide}>
                   <span className={styles.points}>
                     {revealed[idx] ? answer.points : '?'}
