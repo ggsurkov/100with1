@@ -1,5 +1,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export enum GameTypes {
+  GuessPopularity = 'GuessPopularity', // Механика "100 к 1"
+}
+
 export interface IAnswer {
   text: string;
   hint: string;
@@ -28,6 +32,7 @@ export interface IRound {
 export interface IGame extends Document {
   title: string;
   description: string;
+  type?: GameTypes;
   rounds: IRound[];
 }
 
@@ -59,6 +64,7 @@ const RoundSchema: Schema = new Schema({
 const GameSchema: Schema = new Schema({
   title: { type: String, required: true },
   description: { type: String, default: '' },
+  type: { type: String, enum: Object.values(GameTypes), default: GameTypes.GuessPopularity },
   rounds: [RoundSchema],
 });
 
