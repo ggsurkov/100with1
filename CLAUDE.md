@@ -22,6 +22,18 @@
   [`.agents/tools/cloudinary.md`](.agents/tools/cloudinary.md).
 - **Деплой**: Render (сервер, эфемерная ФС) + MongoDB Atlas free tier.
 
+## 🛑 СТРОГИЙ ЗАПРЕТ НА ИСПОЛЬЗОВАНИЕ GIT (TOKEN OPTIMIZATION)
+
+1. **НЕ используй и НЕ запрашивай выполнение любых Git-команд:**
+   - Категорически запрещены: `git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, `git checkout`, `git branch`.
+2. **Фокус только на файлах:**
+   - Твоя единственная зона ответственности — чтение, создание и редактирование файлов в `/server` и `/client`, а также проверка типов (`npx tsc --noEmit`).
+3. **Управление версиями делает разработчик:**
+   - Все коммиты, стейджинг, ветки и пуши на GitHub делает исключительно человек вручную.
+   - По завершении задачи просто напиши резюме сделанных изменений и НЕ пытайся сделать `git commit` или `git status`.
+
+Подробности и обоснование: [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md), правило №4.
+
 ## Guardrails (сводка — не сокращай эти правила без ведома пользователя)
 
 1. **Никакого локального хранения файлов на сервере.** Render использует
@@ -57,7 +69,7 @@
 | [`skills/backend-express.md`](.agents/skills/backend-express.md) | Стандарты контроллеров Express+TS, валидация ObjectId, лёгкий поллинг |
 | [`skills/frontend-react.md`](.agents/skills/frontend-react.md) | Стандарты React+TS+SCSS Modules, UI-паттерны планшета ведущего, roadmap мобильных капитанов |
 | [`tools/cloudinary.md`](.agents/tools/cloudinary.md) | Работа с изображениями: Cloudinary SDK + multer, запрет `/uploads` |
-| [`harness/code-safety.md`](.agents/harness/code-safety.md) | Защитный вольер: редиректы, совместимость типов, переменные окружения деплоя |
+| [`harness/code-safety.md`](.agents/harness/code-safety.md) | Защитный вольер: редиректы, совместимость типов, переменные окружения деплоя, запрет Git-команд |
 
 ## Быстрый старт для агента
 
