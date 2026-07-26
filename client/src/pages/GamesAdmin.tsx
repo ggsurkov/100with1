@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import common from './pagesStyles.module.scss';
 import styles from './GamesAdmin.module.scss';
 
 export default function GamesAdmin() {
+  const { hasPermission } = useAuth();
   const [games, setGames] = useState<any[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -135,7 +137,9 @@ export default function GamesAdmin() {
         ))}
         <div style={{display: 'flex', justifyContent: 'space-between'}}>
           <button onClick={addRound} className={`${styles.btnAction} ${styles.addR}`}>+ Add Round</button>
-          <button onClick={handleCreate} className={styles.saveBtn}>Save Game</button>
+          {hasPermission('CREATE') && (
+            <button onClick={handleCreate} className={styles.saveBtn}>Save Game</button>
+          )}
         </div>
       </div>
 
@@ -153,8 +157,12 @@ export default function GamesAdmin() {
               <td>{game.title}</td>
               <td>{game.rounds?.length || 0}</td>
               <td>
-                <Link to={`/admin/games/${game._id}`} className={common.editBtn}>Edit</Link>
-                <button onClick={() => handleDelete(game._id)} className={common.deleteBtn}>Delete</button>
+                {hasPermission('EDIT') && (
+                  <Link to={`/admin/games/${game._id}`} className={common.editBtn}>Edit</Link>
+                )}
+                {hasPermission('CREATE') && (
+                  <button onClick={() => handleDelete(game._id)} className={common.deleteBtn}>Delete</button>
+                )}
               </td>
             </tr>
           ))}

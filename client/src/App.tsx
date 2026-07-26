@@ -5,6 +5,7 @@ import TeamsAdmin from './pages/TeamsAdmin';
 import TeamEdit from './pages/TeamEdit';
 import GamesAdmin from './pages/GamesAdmin';
 import GameEdit from './pages/GameEdit';
+import UsersManagement from './pages/UsersManagement';
 import GamesList from './pages/GamesList';
 import GameRounds from './pages/GameRounds';
 import RoundStart from './pages/RoundStart';
@@ -21,6 +22,7 @@ function App() {
           <Route path="teams/:id" element={<TeamEdit />} />
           <Route path="games" element={<GamesAdmin />} />
           <Route path="games/:id" element={<GameEdit />} />
+          <Route path="users" element={<UsersManagement />} />
         </Route>
 
         {/* Game Mode */}
