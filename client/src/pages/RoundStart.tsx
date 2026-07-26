@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import styles from './RoundStart.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
+import { startTimerMusic, stopTimerMusic, isMuted, toggleMute, playTestSound } from '../utils/audio';
 
 export default function RoundStart() {
   const { id, roundId, launchId } = useParams();
@@ -12,7 +13,17 @@ export default function RoundStart() {
   const [qIndex, setQIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [running, setRunning] = useState(false);
+  const [muted, setMuted] = useState(isMuted());
   const intervalRef = useRef<any>(null);
+
+  // Timer music follows the running state — covers manual Start/Stop,
+  // auto-stop at 0 (which sets running=false), and unmount on nav-away.
+  useEffect(() => {
+    if (running) startTimerMusic();
+    else stopTimerMusic();
+  }, [running]);
+
+  useEffect(() => stopTimerMusic, []);
 
   // Fetch game data — from launch (populated) or directly
   useEffect(() => {
@@ -81,6 +92,18 @@ export default function RoundStart() {
 
   return (
     <div className={styles.fullscreen}>
+      <div className={styles.audioControls}>
+        <button type="button" className={styles.testSoundBtn} onClick={() => playTestSound()}>
+          🔊 Проверить звук
+        </button>
+        <button
+          type="button"
+          className={styles.muteBtn}
+          onClick={() => setMuted(toggleMute())}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
+      </div>
       <div className={styles.card}>
         <div className={styles.progress}>
           Question {qIndex + 1} / {questions.length}

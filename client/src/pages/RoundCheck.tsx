@@ -4,6 +4,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import styles from './RoundCheck.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
+import { playRevealSound, isMuted, toggleMute, playTestSound } from '../utils/audio';
 
 export default function RoundCheck() {
   const { id, roundId, launchId } = useParams();
@@ -16,6 +17,7 @@ export default function RoundCheck() {
   const [answerTeams, setAnswerTeams] = useState<Record<number, Set<string>>>({});
   const [openPopover, setOpenPopover] = useState<number | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [muted, setMuted] = useState(isMuted());
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -64,7 +66,11 @@ export default function RoundCheck() {
   };
 
   const toggleAnswer = (idx: number) => {
-    setRevealed(prev => ({ ...prev, [idx]: !prev[idx] }));
+    setRevealed(prev => {
+      const next = !prev[idx];
+      if (next) playRevealSound();
+      return { ...prev, [idx]: next };
+    });
   };
 
   const toggleTeamForAnswer = (answerIdx: number, teamId: string) => {
@@ -129,6 +135,18 @@ export default function RoundCheck() {
 
   return (
     <div className={styles.fullscreen} onClick={() => setOpenPopover(null)}>
+      <div className={styles.audioControls} onClick={e => e.stopPropagation()}>
+        <button type="button" className={styles.testSoundBtn} onClick={() => playTestSound()}>
+          🔊 Проверить звук
+        </button>
+        <button
+          type="button"
+          className={styles.muteBtn}
+          onClick={() => setMuted(toggleMute())}
+        >
+          {muted ? '🔇' : '🔊'}
+        </button>
+      </div>
       <div className={styles.progress}>
         Question {qIndex + 1} / {round.questions.length}
       </div>
