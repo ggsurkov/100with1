@@ -13,6 +13,7 @@ export interface IQuestion {
   hint: string;
   timer: number;
   orderNumber: number;
+  imageUrl?: string;
   answers: IAnswer[];
 }
 
@@ -42,6 +43,7 @@ const QuestionSchema: Schema = new Schema({
   hint: { type: String, default: '' },
   timer: { type: Number, default: 60 },
   orderNumber: { type: Number, required: true },
+  imageUrl: { type: String, required: false },
   answers: [AnswerSchema],
 });
 

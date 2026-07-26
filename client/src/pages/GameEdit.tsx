@@ -4,6 +4,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import common from './pagesStyles.module.scss';
 import styles from './GamesAdmin.module.scss'; // keeping unique specific styles
+import { optimizeCloudinaryUrl } from '../utils/image';
 
 export default function GameEdit() {
   const { id } = useParams();
@@ -167,7 +168,7 @@ export default function GameEdit() {
                   {q.imageUrl && (
                     <div className={styles.imagePreviewWrap}>
                       <img
-                        src={q.imageUrl}
+                        src={optimizeCloudinaryUrl(q.imageUrl)}
                         alt="Question"
                         className={styles.imagePreview}
                         onClick={() => setPreviewImageUrl(q.imageUrl)}
@@ -214,7 +215,7 @@ export default function GameEdit() {
             ✕
           </button>
           <img
-            src={previewImageUrl}
+            src={optimizeCloudinaryUrl(previewImageUrl || undefined)}
             alt="Preview"
             className={styles.lightboxImage}
             onClick={e => e.stopPropagation()}

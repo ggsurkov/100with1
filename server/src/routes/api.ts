@@ -4,6 +4,7 @@ import Admin from '../models/Admin';
 import Team from '../models/Team';
 import Game from '../models/Game';
 import Launch from '../models/Launch';
+import upload from '../middleware/upload';
 
 const router = express.Router();
 
@@ -68,6 +69,18 @@ router.put('/teams/:id', authMiddleware, validateTeam, async (req, res) => {
 router.delete('/teams/:id', authMiddleware, async (req, res) => {
   await Team.findByIdAndDelete(req.params.id);
   res.json({ message: 'Deleted' });
+});
+
+// Image upload
+router.post('/upload', authMiddleware, (req: any, res) => {
+  upload.single('image')(req, res, (err: any) => {
+    if (err) {
+      console.error('[Upload] Error:', err.message);
+      return res.status(400).json({ message: 'Upload failed', error: err.message });
+    }
+    if (!req.file) return res.status(400).json({ message: 'No file provided' });
+    res.json({ imageUrl: req.file.path });
+  });
 });
 
 // Games CRUD
