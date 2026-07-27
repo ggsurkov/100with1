@@ -28,6 +28,7 @@ export default function RoundCheck() {
   const [openPopover, setOpenPopover] = useState<number | null>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [muted, setMuted] = useState(isMuted());
+  const [captainAnswers, setCaptainAnswers] = useState<any[]>([]);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,21 +56,51 @@ export default function RoundCheck() {
 
   const themeClass = themeClassFor(launch?.gameType ?? game?.type);
 
-  if (!game) return <div className={`${styles.fullscreen} ${themeClass}`} style={{ color: 'white' }}>Loading...</div>;
+  const round = game?.rounds?.find((r: any, idx: number) => r._id === roundId || idx.toString() === roundId);
+  const questions = round?.questions || [];
+  const question = questions[qIndex];
 
-  const round = game.rounds?.find((r: any, idx: number) => r._id === roundId || idx.toString() === roundId);
+  // Tell captains' phones which question the host is checking, and lock answer input.
+  useEffect(() => {
+    if (!launch || !launchId || !question?._id) return;
+    api.put(`/launches/${launchId}`, { currentQuestionId: question._id, isTimerActive: false }).catch(() => {});
+  }, [question?._id, launch, launchId]);
+
+  // Poll captains' submitted answers every 3s while checking.
+  useEffect(() => {
+    if (!launchId) return;
+    let cancelled = false;
+
+    const fetchAnswers = () => {
+      api.get(`/launches/${launchId}/answers`)
+        .then(({ data }) => { if (!cancelled) setCaptainAnswers(data); })
+        .catch(() => {});
+    };
+
+    fetchAnswers();
+    const interval = setInterval(fetchAnswers, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [launchId]);
+
+  if (!game) return <div className={`${styles.fullscreen} ${themeClass}`} style={{ color: 'white' }}>Loading...</div>;
   if (!round || !round.questions || round.questions.length === 0) {
     return <div className={`${styles.fullscreen} ${themeClass}`} style={{ color: 'white' }}>No questions.</div>;
   }
 
-  const question = round.questions[qIndex];
   const isLastQuestion = qIndex >= round.questions.length - 1;
   const teams: any[] = launch?.teamGameInfo || [];
   const hasImage = !!question.imageUrl;
 
-  const captainTeams = teams.length > 0
-    ? teams.map((t: any) => ({ id: t.teamId, title: t.teamTitle }))
-    : MOCK_CAPTAIN_TEAMS;
+  const captainAnswerEntries = launchId
+    ? teams.map((t: any) => {
+        const teamAnswer = captainAnswers.find((a: any) => String(a.teamId?._id || a.teamId) === String(t.teamId));
+        const entry = teamAnswer?.answers?.find((a: any) => a.roundId === round._id && a.questionId === question._id);
+        return { id: t.teamId, title: t.teamTitle, answer: entry?.answerText || null };
+      })
+    : MOCK_CAPTAIN_TEAMS.map(t => ({ ...t, answer: 'Вариант ответа' }));
 
   const handleNext = () => {
     if (!isLastQuestion) {
@@ -275,12 +306,17 @@ export default function RoundCheck() {
           <div className={styles.captainsCol}>
             <h3 className={styles.colTitle}>Ответы капитанов</h3>
             <div className={styles.captainList}>
-              {captainTeams.map(team => (
-                <div key={team.id} className={styles.captainCard}>
-                  <span className={styles.captainTeam}>{team.title}</span>
-                  <span className={styles.captainAnswer}>&laquo;Вариант ответа&raquo;</span>
+              {captainAnswerEntries.map(entry => (
+                <div key={entry.id} className={styles.captainCard}>
+                  <span className={styles.captainTeam}>{entry.title}</span>
+                  <span className={`${styles.captainAnswer} ${!entry.answer ? styles.captainPending : ''}`}>
+                    {entry.answer ? `«${entry.answer}»` : 'Ожидание ответа…'}
+                  </span>
                 </div>
               ))}
+              {captainAnswerEntries.length === 0 && (
+                <p className={styles.captainEmpty}>Нет подключенных капитанов.</p>
+              )}
             </div>
           </div>
 

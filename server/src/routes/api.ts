@@ -2,10 +2,12 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
+import QRCode from 'qrcode';
 import User, { DEFAULT_PERMISSIONS_BY_ROLE } from '../models/User';
 import Team from '../models/Team';
 import Game from '../models/Game';
 import Launch from '../models/Launch';
+import TeamAnswer from '../models/TeamAnswer';
 import upload from '../middleware/upload';
 import { authMiddleware, requireRole, requirePermission, JWT_SECRET } from '../middleware/auth';
 
@@ -184,7 +186,12 @@ router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req
   const { gameId } = req.body;
   if (!gameId || gameId === 'undefined') return res.status(400).json({ message: 'Invalid gameId provided' });
   try {
-    const launch = new Launch(req.body);
+    const launchId = new mongoose.Types.ObjectId();
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const joinUrl = `${clientUrl}/launch/${launchId}/join`;
+    const qrCode = await QRCode.toDataURL(joinUrl);
+
+    const launch = new Launch({ ...req.body, _id: launchId, qrCode });
     await launch.save();
     res.json(launch);
   } catch (e) {
@@ -225,6 +232,136 @@ router.delete('/launches/:id', authMiddleware, requirePermission('CREATE'), asyn
   }
   await Launch.findByIdAndDelete(id);
   res.json({ message: 'Deleted' });
+});
+
+// ---- Captain devices (public, unauthenticated) ----
+// Powers the QR/PIN join flow and the real-time answer submission from team
+// captains' own phones — none of them hold a JWT, so these stay outside authMiddleware.
+
+// Public: team-selection screen (TeamChoosePage) needs the roster + which
+// captains already claimed a team, without exposing anything auth-gated.
+router.get('/launches/:id/teams', async (req, res) => {
+  const { id } = req.params;
+  if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
+  try {
+    const launch = await Launch.findById(id).select('teamGameInfo gameId status').populate('gameId', 'title');
+    if (!launch) return res.status(404).json({ message: 'Launch not found' });
+    res.json({
+      gameTitle: (launch.gameId as any)?.title || '',
+      status: launch.status,
+      teams: launch.teamGameInfo.map((t: any) => ({
+        teamId: t.teamId,
+        teamTitle: t.teamTitle,
+        capitanActive: !!t.capitanActive,
+      })),
+    });
+  } catch (e) {
+    res.status(400).json({ message: 'Invalid ID provided' });
+  }
+});
+
+// Public: 3s polling endpoint for CaptainPlayPage. Deliberately minimal —
+// no timerSeconds, no scores, no other teams' data.
+router.get('/launches/:id/state', async (req, res) => {
+  const { id } = req.params;
+  if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
+  try {
+    const launch = await Launch.findById(id).populate('gameId');
+    if (!launch) return res.status(404).json({ message: 'Launch not found' });
+
+    let question: { title: string; imageUrl?: string } | null = null;
+    if (launch.currentRoundId && launch.currentQuestionId) {
+      const game: any = launch.gameId;
+      const round = game?.rounds?.find((r: any) => String(r._id) === String(launch.currentRoundId));
+      const q = round?.questions?.find((q: any) => String(q._id) === String(launch.currentQuestionId));
+      if (q) question = { title: q.title, imageUrl: q.imageUrl };
+    }
+
+    res.json({
+      launchId: launch._id,
+      currentRoundId: launch.currentRoundId || null,
+      currentQuestionId: launch.currentQuestionId || null,
+      isTimerActive: launch.isTimerActive,
+      question,
+    });
+  } catch (e) {
+    res.status(400).json({ message: 'Invalid ID provided' });
+  }
+});
+
+router.post('/launches/:id/join', async (req, res) => {
+  const { id } = req.params;
+  const { teamId, pin } = req.body;
+  if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
+  if (!teamId || !mongoose.isValidObjectId(teamId) || !pin) {
+    return res.status(400).json({ message: 'teamId and pin are required' });
+  }
+  try {
+    const launch = await Launch.findById(id);
+    if (!launch) return res.status(404).json({ message: 'Launch not found' });
+
+    const teamInfo = launch.teamGameInfo.find((t: any) => String(t.teamId) === String(teamId));
+    if (!teamInfo) return res.status(404).json({ message: 'Team is not part of this launch' });
+
+    const team = await Team.findById(teamId);
+    if (!team || team.pin !== String(pin).trim()) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    teamInfo.capitanActive = true;
+    await launch.save();
+
+    const existingAnswer = await TeamAnswer.findOne({ launchId: id, teamId });
+    if (!existingAnswer) {
+      await TeamAnswer.create({ launchId: id, gameId: launch.gameId, teamId, answers: [] });
+    }
+
+    res.json({ message: 'Joined' });
+  } catch (e) {
+    res.status(400).json({ message: 'Failed to join launch' });
+  }
+});
+
+router.put('/launches/:id/answers', async (req, res) => {
+  const { id } = req.params;
+  const { teamId, roundId, questionId, answerText } = req.body;
+  if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
+  if (!teamId || !mongoose.isValidObjectId(teamId) || !roundId || !questionId) {
+    return res.status(400).json({ message: 'teamId, roundId and questionId are required' });
+  }
+  try {
+    let teamAnswer = await TeamAnswer.findOne({ launchId: id, teamId });
+    if (!teamAnswer) {
+      const launch = await Launch.findById(id);
+      if (!launch) return res.status(404).json({ message: 'Launch not found' });
+      teamAnswer = await TeamAnswer.create({ launchId: id, gameId: launch.gameId, teamId, answers: [] });
+    }
+
+    const existing = teamAnswer.answers.find((a: any) => a.roundId === roundId && a.questionId === questionId);
+    if (existing) {
+      existing.answerText = answerText || '';
+      existing.updatedAt = new Date();
+    } else {
+      teamAnswer.answers.push({ roundId, questionId, answerText: answerText || '', updatedAt: new Date() });
+    }
+    await teamAnswer.save();
+
+    res.json(teamAnswer);
+  } catch (e) {
+    res.status(400).json({ message: 'Failed to save answer' });
+  }
+});
+
+// Host-facing: powers the "captains' answers" column in RoundCheck.
+router.get('/launches/:id/answers', authMiddleware, requirePermission('VIEW'), async (req, res) => {
+  const { id } = req.params;
+  if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
+  try {
+    const answers = await TeamAnswer.find({ launchId: id }).populate('teamId', 'title');
+    res.json(answers);
+  } catch (e) {
+    res.status(400).json({ message: 'Invalid ID provided' });
+  }
 });
 
 export default router;

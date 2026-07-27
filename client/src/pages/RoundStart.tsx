@@ -58,7 +58,16 @@ export default function RoundStart() {
     clearInterval(intervalRef.current);
     setRunning(false);
     setTimeLeft(question.timer ?? 60);
-  }, [question?._id, qIndex]); // re-run when question identity changes
+    if (launch && launchId && question._id) {
+      api.put(`/launches/${launchId}`, { currentQuestionId: question._id }).catch(() => {});
+    }
+  }, [question?._id, qIndex, launch, launchId]); // re-run when question identity changes
+
+  // Push isTimerActive to the launch so captains' phones lock/unlock the answer input.
+  useEffect(() => {
+    if (!launch || !launchId) return;
+    api.put(`/launches/${launchId}`, { isTimerActive: running }).catch(() => {});
+  }, [running, launch, launchId]);
 
   // Countdown interval
   useEffect(() => {

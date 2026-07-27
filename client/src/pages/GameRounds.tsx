@@ -16,6 +16,7 @@ export default function GameRounds() {
   const [launch, setLaunch] = useState<Launch | null>(null);
   const [viewRoundIndex, setViewRoundIndex] = useState(0);
   const [updatingActiveRound, setUpdatingActiveRound] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
 
   const isAuthorized = !!user && (user.role === 'admin' || user.role === 'master');
 
@@ -77,6 +78,11 @@ export default function GameRounds() {
     <div className={`${styles.page} ${themeClass}`}>
       {launch && (
         <div className={styles.topBar}>
+          {launch.qrCode && (
+            <button type="button" className={styles.qrBtn} onClick={() => setShowQrModal(true)}>
+              QR для капитанов
+            </button>
+          )}
           <FinishGameButton launchId={launchId} />
         </div>
       )}
@@ -158,6 +164,19 @@ export default function GameRounds() {
 
         <Link to="/games" className={styles.backLink}>Back to Games</Link>
       </div>
+
+      {showQrModal && launch?.qrCode && (
+        <div className={styles.qrOverlay} onClick={() => setShowQrModal(false)}>
+          <div className={styles.qrModal} onClick={e => e.stopPropagation()}>
+            <button type="button" className={styles.qrCloseBtn} onClick={() => setShowQrModal(false)} aria-label="Закрыть">
+              ✕
+            </button>
+            <h2>QR для капитанов</h2>
+            <img src={launch.qrCode} alt="QR code" className={styles.qrImage} />
+            <p className={styles.qrHint}>Отсканируйте, чтобы выбрать команду и войти как капитан</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

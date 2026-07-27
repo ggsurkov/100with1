@@ -12,6 +12,8 @@ import GamesList from './pages/GamesList';
 import GameRounds from './pages/GameRounds';
 import RoundStart from './pages/RoundStart';
 import RoundCheck from './pages/RoundCheck';
+import TeamChoosePage from './pages/TeamChoosePage';
+import CaptainPlayPage from './pages/CaptainPlayPage';
 
 function App() {
   return (
@@ -37,7 +39,11 @@ function App() {
         <Route path="/game/:id/round/:roundId/check" element={<RoundCheck />} />
         <Route path="/launch/:launchId/round/:roundId/start" element={<RoundStart />} />
         <Route path="/launch/:launchId/round/:roundId/check" element={<RoundCheck />} />
-        
+
+        {/* Team captain devices */}
+        <Route path="/launch/:launchId/join" element={<TeamChoosePage />} />
+        <Route path="/launch/:launchId/play" element={<CaptainPlayPage />} />
+
         <Route path="/" element={<LandingPage />} />
       </Routes>
     </Router>

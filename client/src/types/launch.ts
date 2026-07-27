@@ -4,6 +4,7 @@ export interface TeamGameInfo {
   teamId: string;
   teamPoints: number;
   teamTitle: string;
+  capitanActive?: boolean;
 }
 
 export interface Launch {
@@ -15,4 +16,7 @@ export interface Launch {
   currentRoundId?: string;
   gameType: GameTypes;
   finishedAt?: string;
+  qrCode?: string;
+  currentQuestionId?: string;
+  isTimerActive?: boolean;
 }

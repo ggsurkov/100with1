@@ -126,7 +126,7 @@
   }
 }
 
-// Captains column (mock)
+// Captains column (live answers)
 
 .captainList {
   display: flex;
@@ -151,8 +151,19 @@
 }
 
 .captainAnswer {
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-style: italic;
+  font-size: 0.9rem;
+}
+
+.captainPending {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+.captainEmpty {
+  text-align: center;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
