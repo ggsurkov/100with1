@@ -176,7 +176,7 @@ router.delete('/games/:id', authMiddleware, requirePermission('CREATE'), async (
 router.get('/launches', async (req, res) => {
   const launches = await Launch.find({ status: 'finished' })
     .populate('gameId', 'title')
-    .sort({ updatedAt: -1 });
+    .sort({ finishedAt: -1 });
   res.json(launches);
 });
 
@@ -207,7 +207,11 @@ router.put('/launches/:id', authMiddleware, requirePermission('EDIT'), async (re
   const { id } = req.params;
   if (!id || id === 'undefined') return res.status(400).json({ message: 'Invalid ID provided' });
   try {
-    const launch = await Launch.findByIdAndUpdate(id, req.body, { new: true });
+    const update = { ...req.body };
+    if (update.status === 'finished') {
+      update.finishedAt = new Date();
+    }
+    const launch = await Launch.findByIdAndUpdate(id, update, { new: true });
     res.json(launch);
   } catch (e) {
     res.status(400).json({ message: 'Failed to update launch' });

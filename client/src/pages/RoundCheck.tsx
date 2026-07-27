@@ -6,6 +6,14 @@ import { useAuth } from '../context/AuthContext';
 import styles from './RoundCheck.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
 import { playRevealSound, isMuted, toggleMute, playTestSound } from '../utils/audio';
+import { themeClassFor } from '../styles/themes';
+import FinishGameButton from '../components/FinishGameButton';
+
+const MOCK_CAPTAIN_TEAMS = [
+  { id: 'mock-a', title: 'Команда А' },
+  { id: 'mock-b', title: 'Команда Б' },
+  { id: 'mock-c', title: 'Команда В' },
+];
 
 export default function RoundCheck() {
   const { id, roundId, launchId } = useParams();
@@ -45,14 +53,23 @@ export default function RoundCheck() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  if (!game) return <div style={{ padding: '2rem', color: 'white' }}>Loading...</div>;
+  const themeClass = themeClassFor(launch?.gameType ?? game?.type);
+
+  if (!game) return <div className={`${styles.fullscreen} ${themeClass}`} style={{ color: 'white' }}>Loading...</div>;
 
   const round = game.rounds?.find((r: any, idx: number) => r._id === roundId || idx.toString() === roundId);
-  if (!round || !round.questions || round.questions.length === 0) return <div style={{ padding: '2rem', color: 'white' }}>No questions.</div>;
+  if (!round || !round.questions || round.questions.length === 0) {
+    return <div className={`${styles.fullscreen} ${themeClass}`} style={{ color: 'white' }}>No questions.</div>;
+  }
 
   const question = round.questions[qIndex];
   const isLastQuestion = qIndex >= round.questions.length - 1;
   const teams: any[] = launch?.teamGameInfo || [];
+  const hasImage = !!question.imageUrl;
+
+  const captainTeams = teams.length > 0
+    ? teams.map((t: any) => ({ id: t.teamId, title: t.teamTitle }))
+    : MOCK_CAPTAIN_TEAMS;
 
   const handleNext = () => {
     if (!isLastQuestion) {
@@ -136,9 +153,90 @@ export default function RoundCheck() {
     }
   };
 
+  const backPath = launchId ? `/launch/${launchId}/rounds` : `/game/${id}/rounds`;
+
+  const board = (
+    <div className={styles.board}>
+      {question.answers?.map((answer: any, idx: number) => {
+        const selectedTeams = answerTeams[idx] || new Set();
+        const selectedTitles = [...selectedTeams].map(getTeamTitle);
+
+        return (
+          <div key={idx} className={styles.answerWrapper}>
+            <div className={styles.answerPlank} onClick={() => toggleAnswer(idx)}>
+              <div className={styles.leftSide}>
+                <span className={styles.number}>{idx + 1}</span>
+                <span className={styles.text}>
+                  {revealed[idx] ? answer.text : '•••••••••••••'}
+                </span>
+              </div>
+              {revealed[idx] && (
+                <span className={styles.popularity}>{answer.popularity || 0}%</span>
+              )}
+              <div className={styles.rightSide}>
+                <span className={styles.points}>
+                  {revealed[idx] ? answer.points : '?'}
+                </span>
+                {launch && hasPermission('EDIT') && (
+                  <div className={styles.popoverWrap} ref={openPopover === idx ? popoverRef : null}>
+                    <button
+                      className={`${styles.addTeamBtn} ${selectedTeams.size > 0 ? styles.active : ''}`}
+                      onClick={e => { e.stopPropagation(); setOpenPopover(openPopover === idx ? null : idx); }}
+                    >
+                      {selectedTeams.size > 0 ? `+${selectedTeams.size}` : '+'}
+                    </button>
+                    {openPopover === idx && (
+                      <div className={styles.popover} onClick={e => e.stopPropagation()}>
+                        <div className={styles.popoverActions}>
+                          <button onClick={() => selectAll(idx)}>Select All</button>
+                          <button onClick={() => clearAll(idx)}>Clear</button>
+                        </div>
+                        <div className={styles.teamList}>
+                          {teams.map((team: any) => (
+                            <label key={team.teamId} className={styles.teamRow}>
+                              <input
+                                type="checkbox"
+                                checked={selectedTeams.has(team.teamId)}
+                                onChange={() => toggleTeamForAnswer(idx, team.teamId)}
+                              />
+                              <span>{team.teamTitle}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+            {selectedTitles.length > 0 && (
+              <div className={styles.teamTags}>
+                {selectedTitles.map(t => <span key={t} className={styles.tag}>{t}</span>)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const controls = (
+    <div className={styles.controls}>
+      {hasPermission('EDIT') && (
+        <button onClick={handleNext} className={`${styles.btn} ${styles.next}`}>
+          {isLastQuestion ? 'End Round' : 'Next Question'}
+        </button>
+      )}
+      <Link to={backPath} className={`${styles.btn} ${styles.back}`}>
+        Back to Rounds
+      </Link>
+    </div>
+  );
+
   return (
-    <div className={styles.fullscreen} onClick={() => setOpenPopover(null)}>
+    <div className={`${styles.fullscreen} ${themeClass}`} onClick={() => setOpenPopover(null)}>
       <div className={styles.audioControls} onClick={e => e.stopPropagation()}>
+        <FinishGameButton launchId={launchId} />
         <button type="button" className={styles.testSoundBtn} onClick={() => playTestSound()}>
           🔊 Проверить звук
         </button>
@@ -150,98 +248,69 @@ export default function RoundCheck() {
           {muted ? '🔇' : '🔊'}
         </button>
       </div>
-      <div className={styles.progress}>
-        Question {qIndex + 1} / {round.questions.length}
-      </div>
-      <h2 className={styles.questionTitle}>{question.title}</h2>
 
-      {question.imageUrl && (
-        <img src={optimizeCloudinaryUrl(question.imageUrl)} alt="" className={styles.questionImage} />
-      )}
+      {!hasImage ? (
+        <div className={styles.centeredLayout}>
+          <div className={styles.progress}>
+            Question {qIndex + 1} / {round.questions.length}
+          </div>
+          <h2 className={styles.questionTitle}>{question.title}</h2>
 
-      <div className={styles.board}>
-        {question.answers?.map((answer: any, idx: number) => {
-          const selectedTeams = answerTeams[idx] || new Set();
-          const selectedTitles = [...selectedTeams].map(getTeamTitle);
+          {board}
 
-          return (
-            <div key={idx} className={styles.answerWrapper}>
-              <div className={styles.answerPlank} onClick={() => toggleAnswer(idx)}>
-                <div className={styles.leftSide}>
-                  <span className={styles.number}>{idx + 1}</span>
-                  <span className={styles.text}>
-                    {revealed[idx] ? answer.text : '•••••••••••••'}
-                  </span>
+          {launch && hasPermission('EDIT') && (
+            <button
+              onClick={handleCalculateAndSave}
+              className={`${styles.btn} ${styles.calcBtn} ${isSaved ? styles.saved : ''}`}
+              disabled={isSaved}
+            >
+              {isSaved ? '✓ Saved' : 'Calculate & Save'}
+            </button>
+          )}
+
+          {controls}
+        </div>
+      ) : (
+        <div className={styles.threeColLayout}>
+          <div className={styles.captainsCol}>
+            <h3 className={styles.colTitle}>Ответы капитанов</h3>
+            <div className={styles.captainList}>
+              {captainTeams.map(team => (
+                <div key={team.id} className={styles.captainCard}>
+                  <span className={styles.captainTeam}>{team.title}</span>
+                  <span className={styles.captainAnswer}>&laquo;Вариант ответа&raquo;</span>
                 </div>
-                {revealed[idx] && (
-                  <span className={styles.popularity}>{answer.popularity || 0}%</span>
-                )}
-                <div className={styles.rightSide}>
-                  <span className={styles.points}>
-                    {revealed[idx] ? answer.points : '?'}
-                  </span>
-                  {launch && hasPermission('EDIT') && (
-                    <div className={styles.popoverWrap} ref={openPopover === idx ? popoverRef : null}>
-                      <button
-                        className={`${styles.addTeamBtn} ${selectedTeams.size > 0 ? styles.active : ''}`}
-                        onClick={e => { e.stopPropagation(); setOpenPopover(openPopover === idx ? null : idx); }}
-                      >
-                        {selectedTeams.size > 0 ? `+${selectedTeams.size}` : '+'}
-                      </button>
-                      {openPopover === idx && (
-                        <div className={styles.popover} onClick={e => e.stopPropagation()}>
-                          <div className={styles.popoverActions}>
-                            <button onClick={() => selectAll(idx)}>Select All</button>
-                            <button onClick={() => clearAll(idx)}>Clear</button>
-                          </div>
-                          <div className={styles.teamList}>
-                            {teams.map((team: any) => (
-                              <label key={team.teamId} className={styles.teamRow}>
-                                <input
-                                  type="checkbox"
-                                  checked={selectedTeams.has(team.teamId)}
-                                  onChange={() => toggleTeamForAnswer(idx, team.teamId)}
-                                />
-                                <span>{team.teamTitle}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              {selectedTitles.length > 0 && (
-                <div className={styles.teamTags}>
-                  {selectedTitles.map(t => <span key={t} className={styles.tag}>{t}</span>)}
-                </div>
-              )}
+              ))}
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {launch && hasPermission('EDIT') && (
-        <button
-          onClick={handleCalculateAndSave}
-          className={`${styles.btn} ${styles.calcBtn} ${isSaved ? styles.saved : ''}`}
-          disabled={isSaved}
-        >
-          {isSaved ? '✓ Saved' : 'Calculate & Save'}
-        </button>
+          <div className={styles.boardCol}>
+            <h3 className={styles.colTitle}>Табло ответов</h3>
+            <div className={styles.progress}>
+              Question {qIndex + 1} / {round.questions.length}
+            </div>
+            {board}
+          </div>
+
+          <div className={styles.questionCol}>
+            <h3 className={styles.colTitle}>Вопрос</h3>
+            <h2 className={styles.questionTitle}>{question.title}</h2>
+            <img src={optimizeCloudinaryUrl(question.imageUrl)} alt="" className={styles.questionImage} />
+
+            {launch && hasPermission('EDIT') && (
+              <button
+                onClick={handleCalculateAndSave}
+                className={`${styles.btn} ${styles.calcBtn} ${isSaved ? styles.saved : ''}`}
+                disabled={isSaved}
+              >
+                {isSaved ? '✓ Saved' : 'Calculate & Save'}
+              </button>
+            )}
+
+            {controls}
+          </div>
+        </div>
       )}
-
-      <div className={styles.controls}>
-        {hasPermission('EDIT') && (
-          <button onClick={handleNext} className={`${styles.btn} ${styles.next}`}>
-            {isLastQuestion ? 'End Round' : 'Next Question'}
-          </button>
-        )}
-        <Link to={launchId ? `/launch/${launchId}/rounds` : `/game/${id}/rounds`} className={`${styles.btn} ${styles.back}`}>
-          Back to Rounds
-        </Link>
-      </div>
     </div>
   );
 }

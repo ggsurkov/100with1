@@ -1,0 +1,30 @@
+// Per-GameType visual themes. Each theme is a class that overrides the
+// shared CSS custom properties (see src/index.scss) for whatever it wraps.
+// To add a theme for a new GameType: add a class here, then map the enum
+// value to it (see client/src/styles/themes.ts).
+
+.themeGuessPopularity {
+  --bg-primary: #1a0933;
+  --bg-secondary: #240c40;
+  --accent: #ffb703;
+  --accent-hover: #ff0054;
+  --warning: #e63946;
+  --theme-gradient: linear-gradient(135deg, #d90429 0%, #ff0054 55%, #ffb703 100%);
+  --theme-glow: 0 0 24px rgba(255, 183, 3, 0.45), 0 0 48px rgba(217, 4, 41, 0.35);
+  --theme-border-active: linear-gradient(135deg, #e63946, #ffb703);
+
+  // Card / panel chrome (RoundStart, RoundCheck)
+  --theme-card-border: rgba(255, 183, 3, 0.3);
+  --theme-card-glow: 0 0 50px rgba(217, 4, 41, 0.2);
+
+  // Answer planks (RoundCheck board)
+  --theme-plank-gradient: linear-gradient(90deg, #5a0f2e 0%, #d90429 100%);
+  --theme-plank-border: #ff0054;
+  --theme-number-bg: #7a0b2e;
+  --theme-number-border: #ffb703;
+
+  // Team tags / badges
+  --theme-tag-bg: rgba(255, 183, 3, 0.18);
+  --theme-tag-border: rgba(255, 183, 3, 0.45);
+  --theme-tag-color: #ffe08a;
+}
