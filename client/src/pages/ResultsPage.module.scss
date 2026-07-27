@@ -39,6 +39,20 @@
   padding: 1.5rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(8px);
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(217, 70, 239, 0.5);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #a3e635;
+    outline-offset: 2px;
+  }
 }
 
 .cardHeader {
