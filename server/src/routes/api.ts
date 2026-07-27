@@ -10,6 +10,7 @@ import Launch from '../models/Launch';
 import TeamAnswer from '../models/TeamAnswer';
 import upload from '../middleware/upload';
 import { authMiddleware, requireRole, requirePermission, JWT_SECRET } from '../middleware/auth';
+import { getClientBaseUrl } from '../utils/url';
 
 const router = express.Router();
 
@@ -187,7 +188,7 @@ router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req
   if (!gameId || gameId === 'undefined') return res.status(400).json({ message: 'Invalid gameId provided' });
   try {
     const launchId = new mongoose.Types.ObjectId();
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    const clientUrl = getClientBaseUrl(req);
     const joinUrl = `${clientUrl}/launch/${launchId}/join`;
     const qrCode = await QRCode.toDataURL(joinUrl);
 
@@ -305,7 +306,7 @@ router.post('/launches/:id/join', async (req, res) => {
 
     const team = await Team.findById(teamId);
     if (!team || team.pin !== String(pin).trim()) {
-      return res.status(401).json({ message: 'Invalid PIN' });
+      return res.status(400).json({ message: 'Invalid PIN' });
     }
 
     teamInfo.capitanActive = true;
