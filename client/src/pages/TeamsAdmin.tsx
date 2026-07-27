@@ -8,6 +8,7 @@ interface Team {
   _id: string;
   title: string;
   description: string;
+  pin: string;
 }
 
 export default function TeamsAdmin() {
@@ -65,6 +66,7 @@ export default function TeamsAdmin() {
           <tr>
             <th>Title</th>
             <th>Description</th>
+            <th>PIN</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -73,6 +75,7 @@ export default function TeamsAdmin() {
             <tr key={team._id}>
               <td>{team.title}</td>
               <td>{team.description}</td>
+              <td>{team.pin}</td>
               <td>
                 {hasPermission('EDIT') && (
                   <Link to={`/admin/teams/${team._id}`} className={common.editBtn}>Edit</Link>

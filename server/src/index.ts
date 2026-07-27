@@ -5,18 +5,19 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import apiRoutes from './routes/api';
-import { seedAdmin } from './seeder';
+import { seedAdmin, seedTeamPins } from './seeder';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/100with1')
   .then(async () => {
     console.log('Connected to MongoDB');
     await seedAdmin();
+    await seedTeamPins();
   })
   .catch(err => console.error('MongoDB connection error:', err));
 

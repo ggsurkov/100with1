@@ -15,6 +15,89 @@
   top: 1rem;
   right: 1rem;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qrBtn {
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+// ---- QR modal ----
+
+.qrOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1.5rem;
+}
+
+.qrModal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 2.5rem 2rem 2rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  h2 {
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+}
+
+.qrCloseBtn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.qrImage {
+  width: 100%;
+  max-width: 280px;
+  border-radius: 12px;
+  background: white;
+  padding: 0.75rem;
+}
+
+.qrHint {
+  margin-top: 1.25rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 .container {
