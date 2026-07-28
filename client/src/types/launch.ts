@@ -5,6 +5,9 @@ export interface TeamGameInfo {
   teamPoints: number;
   teamTitle: string;
   capitanActive?: boolean;
+  // Per-question score ledger (questionId -> points awarded); teamPoints is
+  // always the sum of these values.
+  questionScores?: { [questionId: string]: number };
 }
 
 export interface Launch {
@@ -17,6 +20,8 @@ export interface Launch {
   gameType: GameTypes;
   finishedAt?: string;
   qrCode?: string;
+  qrCodeApp?: string;
+  qrCodeLaunch?: string;
   currentQuestionId?: string;
   isTimerActive?: boolean;
 }

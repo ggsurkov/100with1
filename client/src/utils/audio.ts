@@ -19,6 +19,16 @@ export function toggleMute(): boolean {
   return next;
 }
 
+// Unconditional mute (not a toggle) — used on captain-facing routes, where no
+// sound effects should ever be audible regardless of the host's mute setting.
+export function forceMute(): void {
+  localStorage.setItem(MUTE_STORAGE_KEY, 'true');
+  revealSound.muted = true;
+  timerMusic.muted = true;
+  revealSound.pause();
+  timerMusic.pause();
+}
+
 export { isMuted };
 
 function handlePlayError(error: any) {

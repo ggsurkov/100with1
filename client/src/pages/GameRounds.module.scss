@@ -68,6 +68,37 @@
   }
 }
 
+.qrTabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 0.3rem;
+}
+
+.qrTabBtn {
+  flex: 1;
+  padding: 0.65rem 0.5rem;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover {
+    color: white;
+  }
+}
+
+.qrTabActive {
+  background: var(--accent);
+  color: white;
+}
+
 .qrCloseBtn {
   position: absolute;
   top: 1rem;

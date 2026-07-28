@@ -17,6 +17,7 @@ export default function GameRounds() {
   const [viewRoundIndex, setViewRoundIndex] = useState(0);
   const [updatingActiveRound, setUpdatingActiveRound] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [qrTab, setQrTab] = useState<'app' | 'launch'>('launch');
 
   const isAuthorized = !!user && (user.role === 'admin' || user.role === 'master');
 
@@ -78,7 +79,7 @@ export default function GameRounds() {
     <div className={`${styles.page} ${themeClass}`}>
       {launch && (
         <div className={styles.topBar}>
-          {launch.qrCode && (
+          {(launch.qrCodeLaunch || launch.qrCode) && (
             <button type="button" className={styles.qrBtn} onClick={() => setShowQrModal(true)}>
               QR для капитанов
             </button>
@@ -165,15 +166,45 @@ export default function GameRounds() {
         <Link to="/games" className={styles.backLink}>Back to Games</Link>
       </div>
 
-      {showQrModal && launch?.qrCode && (
+      {showQrModal && (launch?.qrCodeLaunch || launch?.qrCode) && (
         <div className={styles.qrOverlay} onClick={() => setShowQrModal(false)}>
           <div className={styles.qrModal} onClick={e => e.stopPropagation()}>
             <button type="button" className={styles.qrCloseBtn} onClick={() => setShowQrModal(false)} aria-label="Закрыть">
               ✕
             </button>
-            <h2>QR для капитанов</h2>
-            <img src={launch.qrCode} alt="QR code" className={styles.qrImage} />
-            <p className={styles.qrHint}>Отсканируйте, чтобы выбрать команду и войти как капитан</p>
+
+            <div className={styles.qrTabs}>
+              <button
+                type="button"
+                className={`${styles.qrTabBtn} ${qrTab === 'app' ? styles.qrTabActive : ''}`}
+                onClick={() => setQrTab('app')}
+              >
+                1. Скачать PWA-приложение
+              </button>
+              <button
+                type="button"
+                className={`${styles.qrTabBtn} ${qrTab === 'launch' ? styles.qrTabActive : ''}`}
+                onClick={() => setQrTab('launch')}
+              >
+                2. Присоединиться к игре
+              </button>
+            </div>
+
+            {qrTab === 'app' ? (
+              launch?.qrCodeApp ? (
+                <>
+                  <img src={launch.qrCodeApp} alt="QR code" className={styles.qrImage} />
+                  <p className={styles.qrHint}>Отсканируйте, чтобы установить приложение на главный экран</p>
+                </>
+              ) : (
+                <p className={styles.qrHint}>QR-код приложения недоступен для этой игры (создана до обновления).</p>
+              )
+            ) : (
+              <>
+                <img src={launch?.qrCodeLaunch || launch?.qrCode} alt="QR code" className={styles.qrImage} />
+                <p className={styles.qrHint}>Отсканируйте, чтобы выбрать команду и войти как капитан</p>
+              </>
+            )}
           </div>
         </div>
       )}
