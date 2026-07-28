@@ -14,6 +14,7 @@ import RoundStart from './pages/RoundStart';
 import RoundCheck from './pages/RoundCheck';
 import TeamChoosePage from './pages/TeamChoosePage';
 import CaptainPlayPage from './pages/CaptainPlayPage';
+import PwaAppPage from './pages/PwaAppPage';
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
         <Route path="/launch/:launchId/round/:roundId/check" element={<RoundCheck />} />
 
         {/* Team captain devices */}
+        <Route path="/app" element={<PwaAppPage />} />
         <Route path="/launch/:launchId/join" element={<TeamChoosePage />} />
         <Route path="/launch/:launchId/play" element={<CaptainPlayPage />} />
 

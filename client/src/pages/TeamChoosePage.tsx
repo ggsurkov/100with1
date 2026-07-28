@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import publicApi from '../services/publicApi';
+import { forceMute } from '../utils/audio';
 import styles from './TeamChoosePage.module.scss';
 
 interface TeamOption {
@@ -23,6 +24,11 @@ export default function TeamChoosePage() {
   const [pinTeam, setPinTeam] = useState<TeamOption | null>(null);
   const [pin, setPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Captains never hear host sound effects (reveal gong, timer music) — force-mute on entry.
+  useEffect(() => {
+    forceMute();
+  }, []);
 
   useEffect(() => {
     if (!launchId) return;

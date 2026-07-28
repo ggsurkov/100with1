@@ -190,9 +190,17 @@ router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req
     const launchId = new mongoose.Types.ObjectId();
     const clientUrl = getClientBaseUrl(req);
     const joinUrl = `${clientUrl}/launch/${launchId}/join`;
-    const qrCode = await QRCode.toDataURL(joinUrl);
+    const appUrl = `${clientUrl}/app`;
+    const qrCodeLaunch = await QRCode.toDataURL(joinUrl);
+    const qrCodeApp = await QRCode.toDataURL(appUrl);
 
-    const launch = new Launch({ ...req.body, _id: launchId, qrCode });
+    const launch = new Launch({
+      ...req.body,
+      _id: launchId,
+      qrCode: qrCodeLaunch, // kept for backward compatibility with older clients
+      qrCodeApp,
+      qrCodeLaunch,
+    });
     await launch.save();
     res.json(launch);
   } catch (e) {

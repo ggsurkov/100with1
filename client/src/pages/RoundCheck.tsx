@@ -27,6 +27,7 @@ export default function RoundCheck() {
   const [assignedAnswers, setAssignedAnswers] = useState<Record<string, string>>({});
   const [openCaptainPopover, setOpenCaptainPopover] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [areAnswersRevealed, setAreAnswersRevealed] = useState(false);
   const [muted, setMuted] = useState(isMuted());
   const [captainAnswers, setCaptainAnswers] = useState<any[]>([]);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -64,7 +65,7 @@ export default function RoundCheck() {
   // Tell captains' phones which question the host is checking, and lock answer input.
   useEffect(() => {
     if (!launch || !launchId || !question?._id) return;
-    api.put(`/launches/${launchId}`, { currentQuestionId: question._id, isTimerActive: false }).catch(() => {});
+    api.put(`/launches/${launchId}`, { currentQuestionId: question._id, isTimerActive: false }).catch(() => { });
   }, [question?._id, launch, launchId]);
 
   // Poll captains' submitted answers every 3s while checking.
@@ -75,7 +76,7 @@ export default function RoundCheck() {
     const fetchAnswers = () => {
       api.get(`/launches/${launchId}/answers`)
         .then(({ data }) => { if (!cancelled) setCaptainAnswers(data); })
-        .catch(() => {});
+        .catch(() => { });
     };
 
     fetchAnswers();
@@ -96,9 +97,10 @@ export default function RoundCheck() {
     });
   }, [launchId, round, question, teams, captainAnswers]);
 
-  // Reset matches when moving to a new question.
+  // Reset matches and spoiler state when moving to a new question.
   useEffect(() => {
     setAssignedAnswers({});
+    setAreAnswersRevealed(false);
   }, [question?._id]);
 
   // Auto-match: exact (case/whitespace-insensitive) text match to an official answer.
@@ -166,17 +168,21 @@ export default function RoundCheck() {
       return;
     }
 
-    // Sum up points per team based on the matched official answer.
-    const pointsDelta: Record<string, number> = {};
+    // Points each team earns for the currently displayed question only.
+    const questionId = question._id;
+    const pointsForQuestion: Record<string, number> = {};
     Object.entries(assignedAnswers).forEach(([teamId, answerId]) => {
       const answer = question.answers?.find((a: any) => a._id === answerId);
-      if (answer) pointsDelta[teamId] = (pointsDelta[teamId] || 0) + (answer.points || 0);
+      pointsForQuestion[teamId] = answer?.points || 0;
     });
 
-    const updatedTeamGameInfo = launch.teamGameInfo.map((t: any) => ({
-      ...t,
-      teamPoints: t.teamPoints + (pointsDelta[t.teamId] || 0)
-    }));
+    // Overwrite (not add) this question's entry per team, then re-derive the
+    // total from scratch — repeat clicks or re-matching an answer stay idempotent.
+    const updatedTeamGameInfo = launch.teamGameInfo.map((t: any) => {
+      const questionScores = { ...(t.questionScores || {}), [questionId]: pointsForQuestion[t.teamId] || 0 };
+      const teamPoints = Object.values(questionScores).reduce((acc: number, curr: any) => acc + Number(curr || 0), 0);
+      return { ...t, questionScores, teamPoints };
+    });
 
     try {
       await api.put(`/launches/${launchId}`, { ...launch, teamGameInfo: updatedTeamGameInfo });
@@ -204,7 +210,7 @@ export default function RoundCheck() {
             </div>
             <div className={styles.rightSide}>
               <span className={styles.pointsCombo}>
-                {revealed[idx] ? `${answer.points} / ${answer.popularity || 0}%` : '? / ?%'}
+                {revealed[idx] ? `${answer.points}p - ${answer.popularity || 0}%` : '? / ?%'}
               </span>
             </div>
           </div>
@@ -266,7 +272,16 @@ export default function RoundCheck() {
       ) : (
         <div className={styles.threeColLayout}>
           <div className={styles.captainsCol}>
-            <h3 className={styles.colTitle}>Ответы капитанов</h3>
+            <div className={styles.captainsColHeader}>
+              <h3 className={styles.colTitle}>Ответы капитанов</h3>
+              <button
+                type="button"
+                className={styles.revealToggleBtn}
+                onClick={() => setAreAnswersRevealed(prev => !prev)}
+              >
+                {areAnswersRevealed ? 'Скрыть ответы' : 'Показать все'}
+              </button>
+            </div>
             <div className={styles.captainList}>
               {captainAnswerEntries.map((entry: any) => {
                 const matchedAnswer = question.answers?.find((a: any) => a._id === assignedAnswers[entry.id]);
@@ -319,10 +334,12 @@ export default function RoundCheck() {
                     </div>
 
                     <span className={`${styles.captainAnswer} ${!entry.answer ? styles.captainPending : ''}`}>
-                      {entry.answer ? `«${entry.answer}»` : 'Ожидание ответа…'}
+                      {entry.answer
+                        ? (areAnswersRevealed ? `«${entry.answer}»` : '••••••••')
+                        : 'Ожидание ответа…'}
                     </span>
 
-                    {matchedAnswer && (
+                    {matchedAnswer && areAnswersRevealed && (
                       <div className={styles.matchedBadge}>
                         ✓ {matchedAnswer.text} · {matchedAnswer.points} pts
                       </div>
