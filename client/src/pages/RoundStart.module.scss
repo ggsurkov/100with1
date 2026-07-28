@@ -1,22 +1,106 @@
 .fullscreen {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at center, #1e293b, #020617);
+  background: radial-gradient(circle at center, var(--bg-secondary), var(--bg-primary));
   padding: 2rem;
 }
 
+.audioControls {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  z-index: 10;
+}
+
+.testSoundBtn {
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover { background: rgba(255, 255, 255, 0.16); }
+}
+
+.muteBtn {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover { background: rgba(255, 255, 255, 0.16); }
+}
+
+// ---- Card layout ----
+// .noImage: single centered column, ~70% width.
+// .withImage: two columns — image (50%) / content (50%).
+
 .card {
   background: rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  padding: 4rem;
+  border: 1px solid var(--theme-card-border, rgba(59, 130, 246, 0.2));
   border-radius: 24px;
-  text-align: center;
-  box-shadow: 0 0 50px rgba(59, 130, 246, 0.1);
+  box-shadow: var(--theme-card-glow, 0 0 50px rgba(59, 130, 246, 0.1));
   backdrop-filter: blur(20px);
+  padding: 3rem;
+}
+
+.noImage {
+  width: 70%;
   max-width: 800px;
+  text-align: center;
+
+  .textCol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.withImage {
+  width: 90%;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 3rem;
+  text-align: left;
+
+  .textCol {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.imageCol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.questionImage {
   width: 100%;
+  max-height: 26rem;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 2px solid var(--theme-plank-border, #3b82f6);
+  box-shadow: var(--theme-card-glow, 0 0 30px rgba(59, 130, 246, 0.2));
 }
 
 .progress {
@@ -28,20 +112,20 @@
 }
 
 .question {
-  font-size: 3rem;
+  font-size: clamp(1.8rem, 3.2vw, 3rem);
   color: white;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   line-height: 1.3;
 }
 
 .timer {
-  font-size: 7rem;
+  font-size: clamp(3.5rem, 7vw, 7rem);
   font-weight: 900;
   color: var(--warning);
   font-family: monospace;
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   text-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
-  
+
   &.danger {
     color: var(--danger);
     text-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
@@ -56,10 +140,10 @@
 }
 
 .timesUp {
-  font-size: 5rem;
+  font-size: clamp(2.5rem, 5vw, 5rem);
   font-weight: 900;
   color: var(--danger);
-  margin-bottom: 3rem;
+  margin-bottom: 2rem;
   text-transform: uppercase;
 }
 
@@ -67,7 +151,8 @@
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
 
   button {
     padding: 1rem 2.5rem;
@@ -75,25 +160,47 @@
     font-weight: bold;
     border-radius: 12px;
     color: white;
-    
+
     &.start { background: var(--success); }
     &.start:hover { background: var(--success-hover); }
-    
+
     &.stop { background: var(--danger); }
     &.stop:hover { background: var(--danger-hover); }
-    
+
     &.next { background: var(--accent); }
     &.next:hover { background: var(--accent-hover); }
   }
+}
+
+.withImage .controls {
+  justify-content: flex-start;
 }
 
 .backLink {
   color: var(--text-secondary);
   text-decoration: none;
   font-size: 1.1rem;
-  
+
   &:hover {
     color: white;
     text-decoration: underline;
+  }
+}
+
+@media (max-width: 800px) {
+  .noImage,
+  .withImage {
+    width: 94%;
+  }
+
+  .withImage {
+    grid-template-columns: 1fr;
+    text-align: center;
+
+    .textCol { align-items: center; }
+  }
+
+  .withImage .controls {
+    justify-content: center;
   }
 }

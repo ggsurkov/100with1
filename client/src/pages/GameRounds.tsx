@@ -1,14 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { Launch } from '../types/launch';
+import { themeClassFor } from '../styles/themes';
+import FinishGameButton from '../components/FinishGameButton';
 import styles from './GameRounds.module.scss';
 
 export default function GameRounds() {
   const { id, launchId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [game, setGame] = useState<any>(null);
-  const [launch, setLaunch] = useState<any>(null);
+  const [launch, setLaunch] = useState<Launch | null>(null);
+  const [viewRoundIndex, setViewRoundIndex] = useState(0);
+  const [updatingActiveRound, setUpdatingActiveRound] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrTab, setQrTab] = useState<'app' | 'launch'>('launch');
+
+  const isAuthorized = !!user && (user.role === 'admin' || user.role === 'master');
 
   useEffect(() => {
+    if (user && !isAuthorized) {
+      toast.error('Access denied: rounds control is restricted to admins and masters');
+    }
+  }, [user, isAuthorized]);
+
+  useEffect(() => {
+    if (!isAuthorized) return;
     if (launchId && launchId !== 'undefined') {
       api.get(`/launches/${launchId}`).then(({ data }) => {
         setLaunch(data);
@@ -18,47 +38,173 @@ export default function GameRounds() {
       api.get(`/games/${id}`).then(({ data }) => setGame(data))
         .catch(() => console.error('Failed to load game'));
     }
-  }, [id, launchId]);
+  }, [id, launchId, isAuthorized]);
 
-  if (!game) return <div style={{padding: '2rem', color: 'white'}}>Loading...</div>;
+  useEffect(() => {
+    setViewRoundIndex(0);
+  }, [game?._id]);
 
-  const sortedTeams = launch?.teamGameInfo 
-    ? [...launch.teamGameInfo].sort((a, b) => b.teamPoints - a.teamPoints) 
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isAuthorized) return <Navigate to="/games" replace />;
+
+  if (!game) return <div className={styles.status}>Loading...</div>;
+
+  const rounds = game.rounds || [];
+  const round = rounds[viewRoundIndex];
+  const roundId = round?._id || String(viewRoundIndex);
+  const isActiveRound = !!launch && !!round && launch.currentRoundId === round._id;
+
+  const sortedTeams = launch?.teamGameInfo
+    ? [...launch.teamGameInfo].sort((a, b) => b.teamPoints - a.teamPoints)
     : [];
 
+  const themeClass = themeClassFor(launch?.gameType ?? game.type);
+
+  const goToRound = async (mode: 'start' | 'check') => {
+    if (launch && launchId && round?._id && launch.currentRoundId !== round._id) {
+      setUpdatingActiveRound(true);
+      try {
+        await api.put(`/launches/${launchId}`, { currentRoundId: round._id });
+        setLaunch(prev => (prev ? { ...prev, currentRoundId: round._id } : prev));
+      } catch {
+        toast.error('Failed to update active round');
+      } finally {
+        setUpdatingActiveRound(false);
+      }
+    }
+    navigate(launchId ? `/launch/${launchId}/round/${roundId}/${mode}` : `/game/${game._id}/round/${roundId}/${mode}`);
+  };
+
   return (
-    <div className={styles.layout}>
-      <div className={styles.container}>
-        <h1 className={styles.title}>{game.title} - Rounds</h1>
-        <div className={styles.list}>
-          {game.rounds?.length === 0 && <p style={{textAlign: 'center', color: '#94a3b8'}}>No rounds available in this game.</p>}
-          {game.rounds?.map((round: any, idx: number) => (
-            <div key={round._id || idx} className={styles.roundCard}>
-              <div className={styles.info}>
-                <strong>Round {round.orderNumber || idx + 1}</strong>
-                <span>{round.hint}</span>
-              </div>
-              <div className={styles.actions}>
-                <Link to={launchId ? `/launch/${launchId}/round/${round._id || idx}/start` : `/game/${game._id}/round/${round._id || idx}/start`} className={styles.startBtn}>Start</Link>
-                <Link to={launchId ? `/launch/${launchId}/round/${round._id || idx}/check` : `/game/${game._id}/round/${round._id || idx}/check`} className={styles.checkBtn}>Check</Link>
-              </div>
-            </div>
-          ))}
+    <div className={`${styles.page} ${themeClass}`}>
+      {launch && (
+        <div className={styles.topBar}>
+          {(launch.qrCodeLaunch || launch.qrCode) && (
+            <button type="button" className={styles.qrBtn} onClick={() => setShowQrModal(true)}>
+              QR для капитанов
+            </button>
+          )}
+          <FinishGameButton launchId={launchId} />
         </div>
+      )}
+      <div className={styles.container}>
+        <h1 className={styles.title}>{game.title}</h1>
+
+        {launch && (
+          <section className={styles.scoreBoard}>
+            <h2>Scoring Board</h2>
+            <div className={styles.scoringList}>
+              {sortedTeams.map((t, i) => (
+                <div key={t.teamId} className={styles.scoreItem}>
+                  <span className={styles.rank}>#{i + 1}</span>
+                  <span className={styles.teamTitle}>{t.teamTitle}</span>
+                  <span className={styles.teamPoints}>{t.teamPoints} pts</span>
+                </div>
+              ))}
+              {sortedTeams.length === 0 && <p className={styles.empty}>No teams joined yet.</p>}
+            </div>
+          </section>
+        )}
+
+        <section className={styles.controllerSection}>
+          {rounds.length === 0 ? (
+            <p className={styles.empty}>No rounds available in this game.</p>
+          ) : (
+            <div className={styles.pagerRow}>
+              <button
+                type="button"
+                className={styles.arrowBtn}
+                onClick={() => setViewRoundIndex(i => Math.max(0, i - 1))}
+                disabled={viewRoundIndex === 0}
+                aria-label="Previous round"
+              >
+                &#9664;
+              </button>
+
+              <div className={`${styles.controllerCard} ${isActiveRound ? styles.active : styles.inactive}`}>
+                {isActiveRound && <span className={styles.activeBadge}>&#9679; Active</span>}
+                <div className={styles.roundName}>Round {round.orderNumber || viewRoundIndex + 1}</div>
+                {round.hint && <div className={styles.roundHint}>{round.hint}</div>}
+                <div className={styles.actionsRow}>
+                  <button
+                    type="button"
+                    className={styles.startBtn}
+                    onClick={() => goToRound('start')}
+                    disabled={updatingActiveRound}
+                  >
+                    Start
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.checkBtn}
+                    onClick={() => goToRound('check')}
+                    disabled={updatingActiveRound}
+                  >
+                    Check
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={styles.arrowBtn}
+                onClick={() => setViewRoundIndex(i => Math.min(rounds.length - 1, i + 1))}
+                disabled={viewRoundIndex === rounds.length - 1}
+                aria-label="Next round"
+              >
+                &#9654;
+              </button>
+            </div>
+          )}
+          {rounds.length > 0 && (
+            <div className={styles.pageIndicator}>
+              Round {viewRoundIndex + 1} of {rounds.length}
+            </div>
+          )}
+        </section>
+
         <Link to="/games" className={styles.backLink}>Back to Games</Link>
       </div>
 
-      {launch && (
-        <div className={styles.sidebar}>
-          <h2>Scoring Board</h2>
-          <div className={styles.scoringList}>
-            {sortedTeams.map((t, i) => (
-              <div key={t.teamId} className={styles.scoreItem}>
-                <span className={styles.rank}>#{i + 1}</span>
-                <span className={styles.teamTitle}>{t.teamTitle}</span>
-                <span className={styles.teamPoints}>{t.teamPoints} pts</span>
-              </div>
-            ))}
+      {showQrModal && (launch?.qrCodeLaunch || launch?.qrCode) && (
+        <div className={styles.qrOverlay} onClick={() => setShowQrModal(false)}>
+          <div className={styles.qrModal} onClick={e => e.stopPropagation()}>
+            <button type="button" className={styles.qrCloseBtn} onClick={() => setShowQrModal(false)} aria-label="Закрыть">
+              ✕
+            </button>
+
+            <div className={styles.qrTabs}>
+              <button
+                type="button"
+                className={`${styles.qrTabBtn} ${qrTab === 'app' ? styles.qrTabActive : ''}`}
+                onClick={() => setQrTab('app')}
+              >
+                1. Скачать PWA-приложение
+              </button>
+              <button
+                type="button"
+                className={`${styles.qrTabBtn} ${qrTab === 'launch' ? styles.qrTabActive : ''}`}
+                onClick={() => setQrTab('launch')}
+              >
+                2. Присоединиться к игре
+              </button>
+            </div>
+
+            {qrTab === 'app' ? (
+              launch?.qrCodeApp ? (
+                <>
+                  <img src={launch.qrCodeApp} alt="QR code" className={styles.qrImage} />
+                  <p className={styles.qrHint}>Отсканируйте, чтобы установить приложение на главный экран</p>
+                </>
+              ) : (
+                <p className={styles.qrHint}>QR-код приложения недоступен для этой игры (создана до обновления).</p>
+              )
+            ) : (
+              <>
+                <img src={launch?.qrCodeLaunch || launch?.qrCode} alt="QR code" className={styles.qrImage} />
+                <p className={styles.qrHint}>Отсканируйте, чтобы выбрать команду и войти как капитан</p>
+              </>
+            )}
           </div>
         </div>
       )}

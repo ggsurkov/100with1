@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
 
@@ -13,5 +14,20 @@ api.interceptors.request.use(config => {
   }
   return config;
 });
+
+api.interceptors.response.use(
+  response => response,
+  error => {
+    const isLoginRequest = error.config?.url?.includes('/login');
+    const isOnPublicPage = window.location.pathname === '/auth' || window.location.pathname === '/';
+    if (error.response?.status === 401 && !isLoginRequest && !isOnPublicPage) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      toast.error('Сессия истекла или требуется авторизация');
+      window.location.href = '/auth';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

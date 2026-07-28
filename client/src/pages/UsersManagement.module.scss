@@ -1,0 +1,47 @@
+.formSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.roleSelect {
+  flex: 0 0 160px;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
+  text-transform: capitalize;
+
+  option {
+    color: #111827;
+    background: white;
+  }
+}
+
+.createBtn {
+  width: 100px;
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+.permissionsRow {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.permissionLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+}

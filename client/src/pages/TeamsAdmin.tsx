@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import common from './pagesStyles.module.scss';
 
 interface Team {
   _id: string;
   title: string;
   description: string;
+  pin: string;
 }
 
 export default function TeamsAdmin() {
+  const { hasPermission } = useAuth();
   const [teams, setTeams] = useState<Team[]>([]);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -53,7 +56,9 @@ export default function TeamsAdmin() {
           onChange={e => setDescription(e.target.value)}
           className={common.input}
         />
-        <button type="submit" className={common.button}>Add Team</button>
+        {hasPermission('CREATE') && (
+          <button type="submit" className={common.button}>Add Team</button>
+        )}
       </form>
 
       <table className={common.table}>
@@ -61,6 +66,7 @@ export default function TeamsAdmin() {
           <tr>
             <th>Title</th>
             <th>Description</th>
+            <th>PIN</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -69,9 +75,14 @@ export default function TeamsAdmin() {
             <tr key={team._id}>
               <td>{team.title}</td>
               <td>{team.description}</td>
+              <td>{team.pin}</td>
               <td>
-                <Link to={`/admin/teams/${team._id}`} className={common.editBtn}>Edit</Link>
-                <button onClick={() => handleDelete(team._id)} className={common.deleteBtn}>Delete</button>
+                {hasPermission('EDIT') && (
+                  <Link to={`/admin/teams/${team._id}`} className={common.editBtn}>Edit</Link>
+                )}
+                {hasPermission('CREATE') && (
+                  <button onClick={() => handleDelete(team._id)} className={common.deleteBtn}>Delete</button>
+                )}
               </td>
             </tr>
           ))}

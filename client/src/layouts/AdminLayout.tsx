@@ -1,13 +1,15 @@
 import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import styles from './AdminLayout.module.scss';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
+  const { logout, canManageUsers } = useAuth();
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
   };
 
   return (
@@ -17,8 +19,9 @@ export default function AdminLayout() {
         <nav className={styles.nav}>
           <Link to="/admin/teams">Teams</Link>
           <Link to="/admin/games">Games</Link>
+          {canManageUsers() && <Link to="/admin/users">Users</Link>}
           <Link to="/games" className={styles.gameMode}>Play Mode</Link>
-          <button onClick={logout} className={styles.logout}>Logout</button>
+          <button onClick={handleLogout} className={styles.logout}>Logout</button>
         </nav>
       </header>
       <main className={styles.main}>
