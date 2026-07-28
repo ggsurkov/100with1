@@ -2,7 +2,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: '/api',
 });
 
 api.interceptors.request.use(config => {
