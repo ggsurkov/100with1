@@ -1,10 +1,8 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050/api';
-
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: '/api',
 });
 
 api.interceptors.request.use(config => {
