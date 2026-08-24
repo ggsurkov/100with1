@@ -164,6 +164,16 @@ router.post('/games', authMiddleware, requirePermission('CREATE'), validateGame,
   res.json(game);
 });
 
+// Stub: accepts a game-generation spec and echoes it back. No game is created yet.
+router.post('/games/generate', authMiddleware, requirePermission('CREATE'), (req, res) => {
+  console.log('[API] Received Game Generation Spec:', JSON.stringify(req.body, null, 2));
+  res.status(200).json({
+    success: true,
+    message: 'Game generation specification accepted successfully',
+    receivedSpec: req.body,
+  });
+});
+
 router.put('/games/:id', authMiddleware, requirePermission('EDIT'), validateGame, async (req, res) => {
   const game = await Game.findByIdAndUpdate(req.params.id, req.body, { new: true });
   res.json(game);

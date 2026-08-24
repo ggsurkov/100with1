@@ -1,103 +1,103 @@
-# 100with1 — Agent Entry Point
+# CLAUDE.md — 13-rule template
 
-Это манифест верхнего уровня для Claude CLI. Прочитай его целиком перед любой
-задачей в этом репозитории. Подробные правила вынесены в `.agents/` —
-переходи по ссылкам ниже за деталями, здесь только сводка.
+These rules apply to every task in this project unless explicitly overridden.
+Bias: caution over speed on non-trivial work. Use judgment on trivial tasks.
 
-## Стек
+## Rule 1 — Think Before Coding
 
-- **Монорепо**: `server/` (Express API) + `client/` (React SPA), запускаются
-  вместе через корневой `npm start` (`concurrently`).
-- **Backend**: Node.js, Express 4, TypeScript, Mongoose 6 → MongoDB Atlas
-  (бесплатный M0-кластер). Аутентификация — JWT (`jsonwebtoken`), без
-  refresh-токенов.
-- **Frontend**: React 19, TypeScript, Vite, React Router 7, Axios,
-  react-hot-toast.
-- **Стилизация — важное расхождение с типовым стеком**: в проекте **нет
-  TailwindCSS и не должно быть** (было единожды подключено и полностью
-  удалено — не переоткрывай этот вопрос без явного запроса пользователя).
-  Каждая страница/компонент стилизуется **только** через co-located
-  CSS Modules (`Component.module.scss`, sass); см.
-  [`.agents/skills/frontend-react.md`](.agents/skills/frontend-react.md) и
-  правило №6 ниже.
-- **Файлы/изображения**: Cloudinary (SDK + multer), см.
-  [`.agents/tools/cloudinary.md`](.agents/tools/cloudinary.md).
-- **Деплой**: Render (сервер, эфемерная ФС) + MongoDB Atlas free tier.
+State assumptions explicitly. If uncertain, ask rather than guess.
+Present multiple interpretations when ambiguity exists.
+Push back when a simpler approach exists.
+Stop when confused. Name what's unclear.
 
-## 🛑 СТРОГИЙ ЗАПРЕТ НА ИСПОЛЬЗОВАНИЕ GIT (TOKEN OPTIMIZATION)
+## Rule 2 — Simplicity First
 
-1. **НЕ используй и НЕ запрашивай выполнение любых Git-команд:**
-   - Категорически запрещены: `git status`, `git diff`, `git log`, `git add`, `git commit`, `git push`, `git checkout`, `git branch`.
-2. **Фокус только на файлах:**
-   - Твоя единственная зона ответственности — чтение, создание и редактирование файлов в `/server` и `/client`, а также проверка типов (`npx tsc --noEmit`).
-3. **Управление версиями делает разработчик:**
-   - Все коммиты, стейджинг, ветки и пуши на GitHub делает исключительно человек вручную.
-   - По завершении задачи просто напиши резюме сделанных изменений и НЕ пытайся сделать `git commit` или `git status`.
+Minimum code that solves the problem. Nothing speculative.
+No features beyond what was asked. No abstractions for single-use code.
+Test: would a senior engineer say this is overcomplicated? If yes, simplify.
 
-Подробности и обоснование: [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md), правило №6.
+## Rule 3 — Surgical Changes
 
-## 🛑 СТРОГИЙ ЗАПРЕТ НА TAILWIND CSS
+Touch only what you must. Clean up only your own mess.
+Don't "improve" adjacent code, comments, or formatting.
+Don't refactor what isn't broken. Match existing style.
 
-- Категорически запрещено использовать Tailwind CSS и классы Tailwind в
-  JSX/TSX.
-- Стилизация компонентов выполняется **ТОЛЬКО с помощью SCSS Modules**
-  (`[ComponentName].module.scss`).
-- Использование глобальных стилей разрешено только для базовых сбросов
-  (reset/CSS-переменные) в `src/index.scss`.
+## Rule 4 — Goal-Driven Execution
 
-Подробности и обоснование: [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md),
-правило №5, и [`.agents/skills/frontend-react.md`](.agents/skills/frontend-react.md).
+Define success criteria. Loop until verified.
+Don't follow steps. Define success and iterate.
+Strong success criteria let you loop independently.
 
-## Guardrails (сводка — не сокращай эти правила без ведома пользователя)
+## Rule 5 — Use the model only for judgment calls
 
-1. **Никакого локального хранения файлов на сервере.** Render использует
-   эфемерную файловую систему — всё, что записано на диск (`/uploads` и
-   т.п.), исчезает при рестарте/редеплое инстанса. Любые загружаемые
-   изображения идут только через Cloudinary. Подробности:
-   [`.agents/tools/cloudinary.md`](.agents/tools/cloudinary.md).
-2. **Всегда проверяй ObjectId перед обращением к Mongoose.** Любой
-   `:id`-параметр или id в теле запроса должен пройти
-   `mongoose.isValidObjectId()` до `findById`/`findByIdAndUpdate`/`populate`.
-   Иначе — необработанный `CastError` и падение запроса. Подробности:
-   [`.agents/skills/backend-express.md`](.agents/skills/backend-express.md).
-3. **Экономь поллинг MongoDB Atlas free tier.** Free-кластер (M0) имеет
-   жёсткие лимиты на соединения и throughput. Любой роут, который дергают
-   часто (статусы, синхронизация хода игры), обязан быть лёгким: точечный
-   `.select(...)`, без `populate`. Подробности:
-   [`.agents/skills/backend-express.md`](.agents/skills/backend-express.md).
-4. **Обратная совместимость типов.** В базе уже лежат сыгранные игры без
-   новых полей. Любое новое поле в `Game`/`Round`/`Question`/`Team`/`Launch`
-   — строго опциональное (`field?: type`), с безопасным fallback на клиенте.
-   Подробности:
-   [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md).
-5. **Никаких редиректов сразу после сохранения в Check Round.** Ведущий
-   должен увидеть подтверждение (`✓ Saved`) прежде чем уйти со страницы;
-   навигация — только по явному действию (Next/End/Back). Подробности:
-   [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md).
-6. **Никакого Tailwind CSS.** Только SCSS Modules co-located с компонентом;
-   глобальные стили — исключительно базовые сбросы/CSS-переменные в
-   `src/index.scss`. Подробности:
-   [`.agents/harness/code-safety.md`](.agents/harness/code-safety.md).
+Use me for: classification, drafting, summarization, extraction.
+Do NOT use me for: routing, retries, deterministic transforms.
+If code can answer, code answers.
 
-## Карта `.agents/`
+## Rule 6 — Token budgets are not advisory
 
-| Файл | Что внутри |
-|---|---|
-| [`architecture.md`](.agents/architecture.md) | Модель данных (`Game→Round→Question→Answer`, `Team`, `Launch`) и жизненный цикл игры от запуска до подсчёта очков |
-| [`skills/backend-express.md`](.agents/skills/backend-express.md) | Стандарты контроллеров Express+TS, валидация ObjectId, лёгкий поллинг |
-| [`skills/frontend-react.md`](.agents/skills/frontend-react.md) | Стандарты React+TS+SCSS Modules, UI-паттерны планшета ведущего, roadmap мобильных капитанов |
-| [`tools/cloudinary.md`](.agents/tools/cloudinary.md) | Работа с изображениями: Cloudinary SDK + multer, запрет `/uploads` |
-| [`harness/code-safety.md`](.agents/harness/code-safety.md) | Защитный вольер: редиректы, совместимость типов, переменные окружения деплоя, запрет Git-команд |
+Per-task: 4,000 tokens. Per-session: 30,000 tokens.
+If approaching budget, summarize and start fresh.
+Surface the breach. Do not silently overrun.
 
-## Быстрый старт для агента
+## Rule 7 — Surface conflicts, don't average them
 
-```bash
-npm start                     # корень: поднимает server (5050) + client (5173) параллельно
-cd server && npx tsc --noEmit # проверка типов бэкенда
-cd client && npx tsc --noEmit # проверка типов фронтенда (2 deprecation-warning в tsconfig — не баг)
-```
+If two patterns contradict, pick one (more recent / more tested).
+Explain why. Flag the other for cleanup.
+Don't blend conflicting patterns.
 
-Дефолтный сид-админ: `admin` / `admin` (см. `server/src/seeder.ts`) — пароль
-хранится **не хэшированным** (`passwordHash` = plain text). Известный долг,
-не исправлять втихую в рамках несвязанной задачи — см.
-[`.agents/harness/code-safety.md`](.agents/harness/code-safety.md).
+## Rule 8 — Read before you write
+
+Before adding code, read exports, immediate callers, shared utilities.
+"Looks orthogonal" is dangerous. If unsure why code is structured a way, ask.
+
+## Rule 9 — Tests verify intent, not just behavior
+
+Tests must encode WHY behavior matters, not just WHAT it does.
+A test that can't fail when business logic changes is wrong.
+
+## Rule 10 — Checkpoint after every significant step
+
+Summarize what was done, what's verified, what's left.
+Don't continue from a state you can't describe back.
+If you lose track, stop and restate.
+
+## Rule 11 — Match the codebase's conventions, even if you disagree
+
+Conformance > taste inside the codebase.
+If you genuinely think a convention is harmful, surface it. Don't fork silently.
+
+## Rule 12 — Fail loud
+
+"Completed" is wrong if anything was skipped silently.
+"Tests pass" is wrong if any were skipped.
+Default to surfacing uncertainty, not hiding it.
+
+## Rule 13 — Write prose in Simplified Technical English
+
+Use the `ste-writing` skill by default for every piece of prose you write or edit:
+docs, READMEs, commit messages, PR text, error messages, release notes, comments,
+and LLM prompts (system prompts, instruction blocks, tool descriptions).
+
+Strict mode: procedures, runbooks, error messages, LLM prompts.
+STE-flavored mode: everything else.
+
+Not covered: code, identifiers, command syntax, and the literal examples, schemas,
+or output templates inside a prompt.
+
+Skip the skill when I ask for another style, or when the text needs a voice.
+Say which mode you used.
+
+
+## Rule 14 — Ambiguity Resolution & Question Limits
+
+1. **Clarify Before Assuming**:
+   - If a prompt contains ambiguity, conflicting requirements, or lacks critical implementation details, **do not guess** or proceed on assumptions.
+   - Stop and formulate concise, targeted clarifying questions covering the technical decisions, UI behaviors, or schema details needed.
+
+2. **3-Question Guardrail (Strict Limit)**:
+   - Ask **at most 3 questions** per topic/task in a single turn.
+   - Keep questions brief and structured. Provide multiple-choice options (e.g., A / B / C) whenever possible to facilitate quick decisions.
+
+3. **Fallback to Sensible Defaults**:
+   - If minor details remain unresolved or the task is non-critical, pick the safest architectural/standard default, explicitly document the assumption in your summary, and proceed.

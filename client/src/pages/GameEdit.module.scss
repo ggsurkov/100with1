@@ -348,6 +348,21 @@
   }
 }
 
+.generateBtn {
+  padding: 0.8rem 1.75rem;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--text-primary);
+
+  &:hover {
+    background: var(--accent);
+    color: white;
+  }
+}
+
 .saveBtn {
   padding: 0.8rem 2.25rem;
   border-radius: 8px;
