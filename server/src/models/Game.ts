@@ -4,6 +4,11 @@ export enum GameTypes {
   GuessPopularity = 'GuessPopularity', // Механика "100 к 1"
 }
 
+export enum RoundTypes {
+  AnswersShow = 'answersShow', // На старте раунда ведущий показывает тексты ответов без популярности
+  AnswersHide = 'answersHide', // На старте раунда ответы не показываются вообще
+}
+
 export interface IAnswer {
   text: string;
   hint: string;
@@ -24,7 +29,7 @@ export interface IQuestion {
 
 export interface IRound {
   orderNumber: number;
-  type: number;
+  type: RoundTypes;
   hint: string;
   questions: IQuestion[];
 }
@@ -57,7 +62,7 @@ const QuestionSchema: Schema = new Schema({
 
 const RoundSchema: Schema = new Schema({
   orderNumber: { type: Number, required: true },
-  type: { type: Number, default: 1 },
+  type: { type: String, enum: Object.values(RoundTypes), default: RoundTypes.AnswersHide },
   hint: { type: String, default: '' },
   questions: [QuestionSchema],
 });

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { GameTypes } from '../types/game';
+import { GameTypes, ROUND_TYPE_LABELS, RoundTypes } from '../types/game';
 import ConfirmModal from '../components/ConfirmModal';
 import GenerateGameModal from '../components/GenerateGameModal';
 import common from './pagesStyles.module.scss';
@@ -65,7 +65,7 @@ export default function GameEdit() {
   }, [previewImageUrl]);
 
   const addRound = () => {
-    const newRounds = [...rounds, { orderNumber: rounds.length + 1, hint: '', questions: [] }];
+    const newRounds = [...rounds, { orderNumber: rounds.length + 1, hint: '', type: RoundTypes.AnswersHide, questions: [] }];
     setRounds(newRounds);
     setSelectedRoundIndex(newRounds.length - 1);
     setSelectedQuestionIndex(null);
@@ -265,6 +265,16 @@ export default function GameEdit() {
                       onClick={e => e.stopPropagation()}
                       onChange={e => updateRound(rIndex, 'hint', e.target.value)}
                     />
+                    <select
+                      className={styles.cardSelect}
+                      value={round.type || RoundTypes.AnswersHide}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => updateRound(rIndex, 'type', e.target.value)}
+                    >
+                      {Object.values(RoundTypes).map(roundType => (
+                        <option key={roundType} value={roundType}>{ROUND_TYPE_LABELS[roundType]}</option>
+                      ))}
+                    </select>
                     <div className={styles.cardMeta}>{round.questions?.length || 0} вопрос(ов)</div>
                   </div>
                 ))}

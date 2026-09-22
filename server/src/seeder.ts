@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import User, { DEFAULT_PERMISSIONS_BY_ROLE } from './models/User';
 import Team, { generateTeamPin } from './models/Team';
+import Game, { RoundTypes } from './models/Game';
 
 export const seedAdmin = async () => {
   try {
@@ -33,5 +34,23 @@ export const seedTeamPins = async () => {
     }
   } catch (error) {
     console.error('Team PIN seeding error:', error);
+  }
+};
+
+// Backfills round types for rounds created before `type` became an enum — they
+// hold the old numeric `1`, which fails enum validation on the next save.
+export const seedRoundTypes = async () => {
+  try {
+    const validTypes = Object.values(RoundTypes);
+    const result = await Game.updateMany(
+      { 'rounds.type': { $nin: validTypes } },
+      { $set: { 'rounds.$[round].type': RoundTypes.AnswersHide } },
+      { arrayFilters: [{ 'round.type': { $nin: validTypes } }] }
+    );
+    if (result.modifiedCount > 0) {
+      console.log(`Backfilled round types in ${result.modifiedCount} game(s)`);
+    }
+  } catch (error) {
+    console.error('Round type seeding error:', error);
   }
 };

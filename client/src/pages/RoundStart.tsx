@@ -6,6 +6,7 @@ import styles from './RoundStart.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
 import { startTimerMusic, stopTimerMusic, isMuted, toggleMute, playTestSound } from '../utils/audio';
 import { themeClassFor } from '../styles/themes';
+import { RoundTypes } from '../types/game';
 import FinishGameButton from '../components/FinishGameButton';
 
 export default function RoundStart() {
@@ -95,6 +96,9 @@ export default function RoundStart() {
   if (!question || timeLeft === null) return <div className={`${styles.fullscreen} ${themeClass}`} style={{ color: 'white' }}>Loading question...</div>;
 
   const isLastQuestion = qIndex >= questions.length - 1;
+  // answersShow — ведущий держит тексты ответов перед глазами, но без процентов
+  // популярности: их вскрывает уже экран проверки. answersHide не показывает ничего.
+  const withAnswers = round.type === RoundTypes.AnswersShow && question.answers?.length > 0;
   const backPath = launchId ? `/launch/${launchId}/rounds` : `/game/${id}/rounds`;
   const hasImage = !!question.imageUrl;
 
@@ -142,31 +146,44 @@ export default function RoundStart() {
         </button>
       </div>
 
-      <div className={`${styles.card} ${hasImage ? styles.withImage : styles.noImage}`}>
-        {hasImage && (
-          <div className={styles.imageCol}>
-            <img src={optimizeCloudinaryUrl(question.imageUrl)} alt="" className={styles.questionImage} />
-          </div>
-        )}
-
-        <div className={styles.textCol}>
-          <div className={styles.progress}>
-            Question {qIndex + 1} / {questions.length}
-          </div>
-
-          <h2 className={styles.question}>{question.title}</h2>
-
-          {timeLeft > 0 ? (
-            <div className={`${styles.timer} ${timeLeft <= 10 ? styles.danger : ''}`}>
-              {timeLeft}s
+      <div className={`${styles.stage} ${withAnswers ? styles.stageWithAnswers : ''}`}>
+        <div className={`${styles.card} ${hasImage ? styles.withImage : styles.noImage}`}>
+          {hasImage && (
+            <div className={styles.imageCol}>
+              <img src={optimizeCloudinaryUrl(question.imageUrl)} alt="" className={styles.questionImage} />
             </div>
-          ) : (
-            <div className={styles.timesUp}>Time's Up!</div>
           )}
 
-          {controls}
-          <Link to={backPath} className={styles.backLink}>Back to Rounds</Link>
+          <div className={styles.textCol}>
+            <div className={styles.progress}>
+              Question {qIndex + 1} / {questions.length}
+            </div>
+
+            <h2 className={styles.question}>{question.title}</h2>
+
+            {timeLeft > 0 ? (
+              <div className={`${styles.timer} ${timeLeft <= 10 ? styles.danger : ''}`}>
+                {timeLeft}s
+              </div>
+            ) : (
+              <div className={styles.timesUp}>Time's Up!</div>
+            )}
+
+            {controls}
+            <Link to={backPath} className={styles.backLink}>Back to Rounds</Link>
+          </div>
         </div>
+
+        {withAnswers && (
+          <aside className={`${styles.card} ${styles.answersCard}`}>
+            <div className={styles.answersTitle}>Ответы</div>
+            <ol className={styles.answersList}>
+              {question.answers.map((answer: any, idx: number) => (
+                <li key={answer._id || idx} className={styles.answerItem}>{answer.text}</li>
+              ))}
+            </ol>
+          </aside>
+        )}
       </div>
     </div>
   );
