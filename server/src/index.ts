@@ -5,7 +5,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import apiRoutes from './routes/api';
-import { seedAdmin, seedTeamPins } from './seeder';
+import { seedAdmin, seedTeamPins, seedRoundTypes } from './seeder';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,6 +18,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/100with1')
     console.log('Connected to MongoDB');
     await seedAdmin();
     await seedTeamPins();
+    await seedRoundTypes();
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
