@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { GameTypes } from '../types/game';
 import ConfirmModal from '../components/ConfirmModal';
+import GenerateGameModal from '../components/GenerateGameModal';
 import common from './pagesStyles.module.scss';
 import styles from './GameEdit.module.scss';
 import { optimizeCloudinaryUrl } from '../utils/image';
@@ -24,6 +25,7 @@ export default function GameEdit() {
   const [selectedRoundIndex, setSelectedRoundIndex] = useState<number | null>(null);
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState<number | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
 
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -446,6 +448,11 @@ export default function GameEdit() {
               Удалить игру
             </button>
           )}
+          {isNew && hasPermission('CREATE') && (
+            <button type="button" className={styles.generateBtn} onClick={() => setShowGenerateModal(true)}>
+              🪄 Сгенерировать игру
+            </button>
+          )}
           {canSave && (
             <button type="button" className={styles.saveBtn} onClick={handleSave}>
               Сохранить
@@ -467,6 +474,8 @@ export default function GameEdit() {
           />
         </div>
       )}
+
+      {showGenerateModal && <GenerateGameModal onClose={() => setShowGenerateModal(false)} />}
 
       {showDeleteConfirm && (
         <ConfirmModal
