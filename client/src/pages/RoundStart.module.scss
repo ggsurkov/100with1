@@ -30,7 +30,9 @@
   cursor: pointer;
   transition: background 0.2s;
 
-  &:hover { background: rgba(255, 255, 255, 0.16); }
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
 }
 
 .muteBtn {
@@ -44,7 +46,19 @@
   cursor: pointer;
   transition: background 0.2s;
 
-  &:hover { background: rgba(255, 255, 255, 0.16); }
+  &:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
+// Ряд карточек: слева вопрос с таймером, справа ответы (только для answersShow).
+.stage {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
 // ---- Card layout ----
@@ -134,9 +148,17 @@
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .timesUp {
@@ -161,14 +183,29 @@
     border-radius: 12px;
     color: white;
 
-    &.start { background: var(--success); }
-    &.start:hover { background: var(--success-hover); }
+    &.start {
+      background: var(--success);
+    }
 
-    &.stop { background: var(--danger); }
-    &.stop:hover { background: var(--danger-hover); }
+    &.start:hover {
+      background: var(--success-hover);
+    }
 
-    &.next { background: var(--accent); }
-    &.next:hover { background: var(--accent-hover); }
+    &.stop {
+      background: var(--danger);
+    }
+
+    &.stop:hover {
+      background: var(--danger-hover);
+    }
+
+    &.next {
+      background: var(--accent);
+    }
+
+    &.next:hover {
+      background: var(--accent-hover);
+    }
   }
 }
 
@@ -188,6 +225,7 @@
 }
 
 @media (max-width: 800px) {
+
   .noImage,
   .withImage {
     width: 94%;
@@ -197,10 +235,81 @@
     grid-template-columns: 1fr;
     text-align: center;
 
-    .textCol { align-items: center; }
+    .textCol {
+      align-items: center;
+    }
   }
 
   .withImage .controls {
     justify-content: center;
+  }
+}
+
+// Карточка ответов — та же поверхность, что и .card, отличается только раскладкой.
+// Проценты популярности здесь не показываются, их вскрывает экран проверки.
+.answersCard {
+  flex: 0 1 30rem;
+  align-self: stretch;
+  padding: 2rem;
+  text-align: left;
+  max-height: 95vh;
+  overflow-y: auto;
+}
+
+// Когда карточка ответов на экране, карточка вопроса перестаёт занимать
+// фиксированную долю ширины и делит ряд с ней.
+.stageWithAnswers {
+  .noImage {
+    width: auto;
+    flex: 1 1 32rem;
+    max-width: 46rem;
+  }
+
+  .withImage {
+    width: auto;
+    flex: 1 1 44rem;
+    max-width: 64rem;
+  }
+}
+
+.answersTitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+}
+
+.answersList {
+  list-style: decimal inside;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+// В полтора раза крупнее прежнего clamp(0.95rem, 1.4vw, 1.25rem).
+.answerItem {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  background: var(--theme-tag-bg, rgba(255, 255, 255, 0.08));
+  color: white;
+  font-size: clamp(1.4rem, 2.1vw, 1.9rem);
+  line-height: 1.35;
+}
+
+@media (max-width: 1100px) {
+  .stageWithAnswers {
+
+    .noImage,
+    .withImage {
+      flex-basis: 100%;
+      max-width: none;
+    }
+  }
+
+  .answersCard {
+    flex: 1 1 100%;
+    max-height: none;
   }
 }

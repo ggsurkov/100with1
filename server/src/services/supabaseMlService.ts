@@ -1,3 +1,5 @@
+import { RoundTypes } from '../models/Game';
+
 // Клиент RPC-функции Supabase `create_game` — внешнего ML-сервиса, который
 // генерирует вопросы игры. Axios на сервере нет, поэтому используем глобальный
 // fetch (Node 18+) и AbortController для таймаута.
@@ -137,7 +139,10 @@ function mapAnswer(raw: any, index: number) {
   return {
     text: firstString(raw?.text, raw?.answer, raw?.title, typeof raw === 'string' ? raw : ''),
     hint: firstString(raw?.hint),
-    orderNumber: firstNumber(raw?.orderNumber, raw?.order) ?? index + 1,
+    // ML сортирует ответы по убыванию популярности, но `orderNumber` оставляет
+    // от своего исходного, несортированного списка. Табло ведущего и редактор
+    // нумеруют ответы по позиции в массиве, поэтому нумеруем так же.
+    orderNumber: index + 1,
     points: firstNumber(raw?.points) ?? popularity ?? 0,
     hide: true,
     popularity: popularity === undefined ? 0 : Math.max(0, Math.min(100, Math.round(popularity))),
@@ -150,7 +155,10 @@ function mapQuestion(raw: any, index: number) {
     title: firstString(raw?.title, raw?.question, raw?.text),
     hint: firstString(raw?.hint),
     timer: firstNumber(raw?.timer) ?? 60,
-    orderNumber: firstNumber(raw?.orderNumber, raw?.order) ?? index + 1,
+    // ML сортирует ответы по убыванию популярности, но `orderNumber` оставляет
+    // от своего исходного, несортированного списка. Табло ведущего и редактор
+    // нумеруют ответы по позиции в массиве, поэтому нумеруем так же.
+    orderNumber: index + 1,
     imageUrl: firstString(raw?.imageUrl, raw?.image_url) || undefined,
     answers: answers.map(mapAnswer),
   };
@@ -160,8 +168,13 @@ function mapRound(raw: any, index: number) {
   const questions = Array.isArray(raw?.questions) ? raw.questions : [];
   return {
     orderNumber: firstNumber(raw?.orderNumber, raw?.roundNumber, raw?.round_number) ?? index + 1,
-    type: firstNumber(raw?.type) ?? 1,
-    hint: firstString(raw?.hint, raw?.roundType, raw?.round_type),
+    // ML тип раунда не присылает. Берём режим по умолчанию — ответы скрыты.
+    type: RoundTypes.AnswersHide,
+    // ML присылает в hint раунда заглушку вида "round 1". Экран ведущего
+    // (`GameRounds`) выводит этот текст, поэтому оставляем поле пустым.
+    // Подсказки вопросов и ответов не трогаем — их нигде не показывают,
+    // и редактор даёт заполнить их вручную.
+    hint: '',
     questions: questions.map(mapQuestion),
   };
 }
