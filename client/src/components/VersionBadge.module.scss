@@ -1,0 +1,13 @@
+.version {
+  position: fixed;
+  right: 6px;
+  bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  z-index: 10;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--text-secondary);
+  opacity: 0.35;
+  // Метка чисто информационная — не должна перехватывать нажатия на экране капитана.
+  pointer-events: none;
+  user-select: none;
+}

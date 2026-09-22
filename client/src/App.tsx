@@ -15,6 +15,7 @@ import RoundCheck from './pages/RoundCheck';
 import TeamChoosePage from './pages/TeamChoosePage';
 import CaptainPlayPage from './pages/CaptainPlayPage';
 import PwaAppPage from './pages/PwaAppPage';
+import VersionBadge from './components/VersionBadge';
 
 function App() {
   return (
@@ -48,6 +49,8 @@ function App() {
 
         <Route path="/" element={<LandingPage />} />
       </Routes>
+
+      <VersionBadge />
     </Router>
   );
 }
