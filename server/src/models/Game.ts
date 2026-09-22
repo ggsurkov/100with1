@@ -33,6 +33,7 @@ export interface IGame extends Document {
   title: string;
   description: string;
   type?: GameTypes;
+  status: 'active' | 'archived';
   rounds: IRound[];
 }
 
@@ -65,6 +66,7 @@ const GameSchema: Schema = new Schema({
   title: { type: String, required: true },
   description: { type: String, default: '' },
   type: { type: String, enum: Object.values(GameTypes), default: GameTypes.GuessPopularity },
+  status: { type: String, enum: ['active', 'archived'], default: 'active' },
   rounds: [RoundSchema],
 });
 

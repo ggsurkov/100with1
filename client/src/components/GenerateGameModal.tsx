@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +34,7 @@ function renumber(spec: GameRoundSpec[]): GameRoundSpec[] {
 
 export default function GenerateGameModal({ onClose }: GenerateGameModalProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [gameTitle, setGameTitle] = useState('');
   const [gameDescription, setGameDescription] = useState('');
@@ -43,6 +45,7 @@ export default function GenerateGameModal({ onClose }: GenerateGameModalProps) {
   const [ratings, setRatings] = useState<RatingOption[]>([]);
   const [gameSpec, setGameSpec] = useState<GameRoundSpec[]>(DEFAULT_GAME_SPEC);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const updateRound = (index: number, field: 'questionCount' | 'roundType', value: number | RoundTypeOption) => {
     setGameSpec(prev => prev.map((round, i) => (i === index ? { ...round, [field]: value } : round)));
@@ -69,12 +72,17 @@ export default function GenerateGameModal({ onClose }: GenerateGameModalProps) {
     };
 
     setSubmitting(true);
+    setError('');
     try {
-      await api.post('/games/generate', payload);
-      toast.success('Спецификация отправлена на генерацию');
+      const { data } = await api.post('/games/generate', payload);
+      const gameId = data?.game?._id;
+      toast.success('Игра успешно сгенерирована!');
       onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Не удалось отправить спецификацию');
+      if (gameId) navigate(`/admin/games/${gameId}`);
+    } catch (err: any) {
+      // Ошибку показываем под кнопкой и модалку не закрываем — спецификация
+      // остаётся заполненной, чтобы можно было повторить запрос.
+      setError(err.response?.data?.message || 'Не удалось сгенерировать игру');
     } finally {
       setSubmitting(false);
     }
@@ -235,6 +243,8 @@ export default function GenerateGameModal({ onClose }: GenerateGameModalProps) {
             {submitting ? 'Генерация...' : 'Сгенерировать'}
           </button>
         </div>
+
+        {error && <p className={styles.error}>{error}</p>}
       </div>
     </div>
   );

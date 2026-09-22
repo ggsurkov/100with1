@@ -11,6 +11,7 @@ import TeamAnswer from '../models/TeamAnswer';
 import upload from '../middleware/upload';
 import { authMiddleware, requireRole, requirePermission, JWT_SECRET } from '../middleware/auth';
 import { getClientBaseUrl } from '../utils/url';
+import { callGenerateGame, normalizeGeneratedGame } from '../services/supabaseMlService';
 
 const router = express.Router();
 
@@ -164,14 +165,17 @@ router.post('/games', authMiddleware, requirePermission('CREATE'), validateGame,
   res.json(game);
 });
 
-// Stub: accepts a game-generation spec and echoes it back. No game is created yet.
-router.post('/games/generate', authMiddleware, requirePermission('CREATE'), (req, res) => {
-  console.log('[API] Received Game Generation Spec:', JSON.stringify(req.body, null, 2));
-  res.status(200).json({
-    success: true,
-    message: 'Game generation specification accepted successfully',
-    receivedSpec: req.body,
-  });
+// Отдаёт спецификацию в ML-сервис Supabase и сохраняет сгенерированную игру в MongoDB.
+router.post('/games/generate', authMiddleware, requirePermission('CREATE'), async (req, res) => {
+  try {
+    const raw = await callGenerateGame(req.body);
+    const game = new Game(normalizeGeneratedGame(raw, req.body));
+    await game.save();
+    res.json({ success: true, game });
+  } catch (err: any) {
+    console.error('[API] Game generation failed:', err?.data ?? err?.message ?? err);
+    res.status(502).json({ success: false, message: 'Ошибка генерации вопросов из ML-сервиса' });
+  }
 });
 
 router.put('/games/:id', authMiddleware, requirePermission('EDIT'), validateGame, async (req, res) => {
