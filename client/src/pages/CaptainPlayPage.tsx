@@ -5,6 +5,8 @@ import publicApi from '../services/publicApi';
 import { optimizeCloudinaryUrl } from '../utils/image';
 import { forceMute } from '../utils/audio';
 import { getTelegramWebApp } from '../utils/telegram';
+import CaptainRoundsSummary from '../components/CaptainRoundsSummary';
+import type { CaptainRoundSummary } from '../types/launch';
 import styles from './CaptainPlayPage.module.scss';
 
 const LAUNCH_KEY = 'pinta_launch_id';
@@ -17,6 +19,7 @@ interface LaunchState {
   currentQuestionId: string | null;
   isTimerActive: boolean;
   question: { title: string; imageUrl?: string } | null;
+  completedRoundIds?: string[];
 }
 
 export default function CaptainPlayPage() {
@@ -32,6 +35,7 @@ export default function CaptainPlayPage() {
   const [submittedQuestionIds, setSubmittedQuestionIds] = useState<Set<string>>(new Set());
   const [cheatBlockedQuestionIds, setCheatBlockedQuestionIds] = useState<Set<string>>(new Set());
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [roundsSummary, setRoundsSummary] = useState<CaptainRoundSummary[]>([]);
   const lastQuestionRef = useRef<string | null>(null);
 
   // Captains never hear host sound effects (reveal gong, timer music) — force-mute on entry.
@@ -68,6 +72,15 @@ export default function CaptainPlayPage() {
       clearInterval(interval);
     };
   }, [launchId]);
+
+  // Reload the team's answers only when the host ends another round, not on every poll.
+  const completedRoundsKey = (state?.completedRoundIds || []).join(',');
+  useEffect(() => {
+    if (!launchId || !teamId || !completedRoundsKey) return;
+    publicApi.get(`/launches/${launchId}/summary`, { params: { teamId } })
+      .then(({ data }) => setRoundsSummary(data))
+      .catch(() => {});
+  }, [launchId, teamId, completedRoundsKey]);
 
   // Reset the answer draft whenever the host moves to a new question.
   useEffect(() => {
@@ -239,7 +252,9 @@ export default function CaptainPlayPage() {
         )}
       </div>
 
-      {!hasQuestion ? (
+      {!hasQuestion && roundsSummary.length > 0 ? (
+        <CaptainRoundsSummary rounds={roundsSummary} />
+      ) : !hasQuestion ? (
         <div className={styles.waiting}>
           <div className={styles.spinner} />
           <p>Ожидайте начала следующего вопроса...</p>
