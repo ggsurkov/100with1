@@ -1,6 +1,6 @@
 {
   "name": "100with1-monorepo",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "scripts": {
     "start": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\""
   },

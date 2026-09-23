@@ -21,6 +21,8 @@ export interface ILaunch extends Document {
   teamGameInfo: TeamGameInfo[];
   status: 'active' | 'finished';
   currentRoundId?: string;
+  // Rounds the host closed with "End Round". Captains then see their answers for them.
+  completedRoundIds: string[];
   gameType: GameTypes;
   finishedAt?: Date;
   qrCode?: string;
@@ -46,6 +48,7 @@ const LaunchSchema: Schema = new Schema({
   teamGameInfo: [TeamGameInfoSchema],
   status: { type: String, enum: ['active', 'finished'], default: 'active' },
   currentRoundId: { type: Schema.Types.ObjectId, ref: 'Round', required: false },
+  completedRoundIds: { type: [Schema.Types.ObjectId], default: [] },
   gameType: { type: String, enum: Object.values(GameTypes), default: GameTypes.GuessPopularity },
   finishedAt: { type: Date, required: false },
   qrCode: { type: String, required: false },

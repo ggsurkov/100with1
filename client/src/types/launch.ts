@@ -17,6 +17,7 @@ export interface Launch {
   teamGameInfo: TeamGameInfo[];
   status: 'active' | 'finished';
   currentRoundId?: string;
+  completedRoundIds?: string[];
   gameType: GameTypes;
   finishedAt?: string;
   qrCode?: string;
@@ -25,4 +26,18 @@ export interface Launch {
   qrCodeTelegram?: string;
   currentQuestionId?: string;
   isTimerActive?: boolean;
+}
+
+// Captain's "round finished" screen: GET /launches/:id/summary.
+export interface CaptainQuestionSummary {
+  questionId: string;
+  title: string;
+  answerText: string | null;
+  wasAway: boolean;
+}
+
+export interface CaptainRoundSummary {
+  roundId: string;
+  title: string;
+  questions: CaptainQuestionSummary[];
 }

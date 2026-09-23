@@ -89,6 +89,20 @@
 
 // ---- Image present: 3 equal columns ----
 
+// Question without an image: captains' answers on the left, board on the right.
+.twoColLayout {
+  width: 96%;
+  max-width: 1500px;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1.5rem;
+  align-items: start;
+
+  .centeredLayout {
+    width: 100%;
+  }
+}
+
 .threeColLayout {
   width: 96%;
   max-width: 1500px;
@@ -459,7 +473,8 @@
 }
 
 @media (max-width: 1100px) {
-  .threeColLayout {
+  .threeColLayout,
+  .twoColLayout {
     grid-template-columns: 1fr;
     width: 92%;
   }

@@ -7,7 +7,12 @@ html, body, .page {
   min-height: 100vh; // fallback for browsers without dvh support
   min-height: 100dvh; // adapts to mobile browser chrome (address bar) show/hide
   background: radial-gradient(circle at top, #1a1035, #050109 70%);
-  padding: 1.5rem 1.25rem 3rem;
+  // Telegram fullscreen draws its close/menu buttons over the page: the SDK
+  // sets these insets. Outside Telegram they are unset and fall back to 0.
+  padding:
+    calc(1.5rem + var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px))
+    1.25rem
+    calc(3rem + var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -61,7 +66,6 @@ html, body, .page {
   color: var(--text-secondary);
   text-align: center;
   font-size: 1.1rem;
-  padding-top: 4rem;
 }
 
 .spinner {
@@ -79,9 +83,12 @@ html, body, .page {
 
 // ---- Question state ----
 
+// margin-block: auto centers the card vertically below the header;
+// a card taller than the screen just scrolls.
 .questionCard {
   width: 100%;
   max-width: 480px;
+  margin-block: auto;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -147,13 +147,18 @@ export default function RoundCheck() {
     setOpenCaptainPopover(null);
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!isLastQuestion) {
       setQIndex(qIndex + 1);
       setRevealed({});
       setOpenCaptainPopover(null);
       setIsSaved(false);
     } else {
+      // End Round: captains' phones switch to the round summary and get a push.
+      if (launchId && round?._id) {
+        await api.post(`/launches/${launchId}/rounds/${round._id}/finish`)
+          .catch(() => toast.error('Не удалось завершить раунд для капитанов'));
+      }
       const backPath = launchId ? `/launch/${launchId}/rounds` : `/game/${id}/rounds`;
       navigate(backPath);
     }
@@ -238,6 +243,97 @@ export default function RoundCheck() {
     </div>
   );
 
+  // Shown in both layouts: without it a question with no image hid the captains' answers.
+  const captainsPanel = (
+    <div className={styles.captainsCol}>
+      <div className={styles.captainsColHeader}>
+        <h3 className={styles.colTitle}>Ответы капитанов</h3>
+        <button
+          type="button"
+          className={styles.revealToggleBtn}
+          onClick={() => setAreAnswersRevealed(prev => !prev)}
+        >
+          {areAnswersRevealed ? 'Скрыть ответы' : 'Показать все'}
+        </button>
+      </div>
+      <div className={styles.captainList}>
+        {captainAnswerEntries.map((entry: any) => {
+          const matchedAnswer = question.answers?.find((a: any) => a._id === assignedAnswers[entry.id]);
+          return (
+            <div key={entry.id} className={styles.captainCard}>
+              <div className={styles.captainCardHeader}>
+                <span className={styles.captainTeam}>{entry.title}</span>
+                {canEdit && (
+                  <div
+                    className={styles.matchPopoverWrap}
+                    ref={openCaptainPopover === entry.id ? popoverRef : null}
+                  >
+                    <button
+                      type="button"
+                      className={styles.matchTriggerBtn}
+                      disabled={!entry.answer}
+                      onClick={e => {
+                        e.stopPropagation();
+                        setOpenCaptainPopover(openCaptainPopover === entry.id ? null : entry.id);
+                      }}
+                    >
+                      {matchedAnswer ? 'Изменить' : 'Сопоставить'}
+                    </button>
+                    {openCaptainPopover === entry.id && (
+                      <div className={styles.matchPopover} onClick={e => e.stopPropagation()}>
+                        <label className={styles.matchOption}>
+                          <input
+                            type="radio"
+                            name={`match-${entry.id}`}
+                            checked={!assignedAnswers[entry.id]}
+                            onChange={() => assignAnswer(entry.id, null)}
+                          />
+                          <span>— Не выбрано —</span>
+                        </label>
+                        {question.answers?.map((a: any, aIdx: number) => (
+                          <label key={a._id || aIdx} className={styles.matchOption}>
+                            <input
+                              type="radio"
+                              name={`match-${entry.id}`}
+                              checked={assignedAnswers[entry.id] === a._id}
+                              onChange={() => assignAnswer(entry.id, a._id)}
+                            />
+                            <span>{a.text} <em>({a.points} pts)</em></span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <span className={`${styles.captainAnswer} ${!entry.answer ? styles.captainPending : ''}`}>
+                {entry.answer
+                  ? (areAnswersRevealed ? `«${entry.answer}»` : '••••••••')
+                  : 'Ожидание ответа…'}
+              </span>
+
+              {entry.leaveCount > 0 && (
+                <div className={styles.awayBadge}>
+                  Уходил из игры: {entry.leaveCount} раз, {entry.awaySeconds} с
+                </div>
+              )}
+
+              {matchedAnswer && areAnswersRevealed && (
+                <div className={styles.matchedBadge}>
+                  ✓ {matchedAnswer.text} · {matchedAnswer.points} pts
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {captainAnswerEntries.length === 0 && (
+          <p className={styles.captainEmpty}>Нет подключенных капитанов.</p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className={`${styles.fullscreen} ${themeClass}`} onClick={() => setOpenCaptainPopover(null)}>
       <div className={styles.audioControls} onClick={e => e.stopPropagation()}>
@@ -255,115 +351,33 @@ export default function RoundCheck() {
       </div>
 
       {!hasImage ? (
-        <div className={styles.centeredLayout}>
-          <div className={styles.progress}>
-            Question {qIndex + 1} / {round.questions.length}
+        <div className={styles.twoColLayout}>
+          {captainsPanel}
+
+          <div className={styles.centeredLayout}>
+            <div className={styles.progress}>
+              Question {qIndex + 1} / {round.questions.length}
+            </div>
+            <h2 className={styles.questionTitle}>{question.title}</h2>
+
+            {board}
+
+            {launch && hasPermission('EDIT') && (
+              <button
+                onClick={handleCalculateAndSave}
+                className={`${styles.btn} ${styles.calcBtn} ${isSaved ? styles.saved : ''}`}
+                disabled={isSaved}
+              >
+                {isSaved ? '✓ Saved' : 'Calculate & Save'}
+              </button>
+            )}
+
+            {controls}
           </div>
-          <h2 className={styles.questionTitle}>{question.title}</h2>
-
-          {board}
-
-          {launch && hasPermission('EDIT') && (
-            <button
-              onClick={handleCalculateAndSave}
-              className={`${styles.btn} ${styles.calcBtn} ${isSaved ? styles.saved : ''}`}
-              disabled={isSaved}
-            >
-              {isSaved ? '✓ Saved' : 'Calculate & Save'}
-            </button>
-          )}
-
-          {controls}
         </div>
       ) : (
         <div className={styles.threeColLayout}>
-          <div className={styles.captainsCol}>
-            <div className={styles.captainsColHeader}>
-              <h3 className={styles.colTitle}>Ответы капитанов</h3>
-              <button
-                type="button"
-                className={styles.revealToggleBtn}
-                onClick={() => setAreAnswersRevealed(prev => !prev)}
-              >
-                {areAnswersRevealed ? 'Скрыть ответы' : 'Показать все'}
-              </button>
-            </div>
-            <div className={styles.captainList}>
-              {captainAnswerEntries.map((entry: any) => {
-                const matchedAnswer = question.answers?.find((a: any) => a._id === assignedAnswers[entry.id]);
-                return (
-                  <div key={entry.id} className={styles.captainCard}>
-                    <div className={styles.captainCardHeader}>
-                      <span className={styles.captainTeam}>{entry.title}</span>
-                      {canEdit && (
-                        <div
-                          className={styles.matchPopoverWrap}
-                          ref={openCaptainPopover === entry.id ? popoverRef : null}
-                        >
-                          <button
-                            type="button"
-                            className={styles.matchTriggerBtn}
-                            disabled={!entry.answer}
-                            onClick={e => {
-                              e.stopPropagation();
-                              setOpenCaptainPopover(openCaptainPopover === entry.id ? null : entry.id);
-                            }}
-                          >
-                            {matchedAnswer ? 'Изменить' : 'Сопоставить'}
-                          </button>
-                          {openCaptainPopover === entry.id && (
-                            <div className={styles.matchPopover} onClick={e => e.stopPropagation()}>
-                              <label className={styles.matchOption}>
-                                <input
-                                  type="radio"
-                                  name={`match-${entry.id}`}
-                                  checked={!assignedAnswers[entry.id]}
-                                  onChange={() => assignAnswer(entry.id, null)}
-                                />
-                                <span>— Не выбрано —</span>
-                              </label>
-                              {question.answers?.map((a: any, aIdx: number) => (
-                                <label key={a._id || aIdx} className={styles.matchOption}>
-                                  <input
-                                    type="radio"
-                                    name={`match-${entry.id}`}
-                                    checked={assignedAnswers[entry.id] === a._id}
-                                    onChange={() => assignAnswer(entry.id, a._id)}
-                                  />
-                                  <span>{a.text} <em>({a.points} pts)</em></span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    <span className={`${styles.captainAnswer} ${!entry.answer ? styles.captainPending : ''}`}>
-                      {entry.answer
-                        ? (areAnswersRevealed ? `«${entry.answer}»` : '••••••••')
-                        : 'Ожидание ответа…'}
-                    </span>
-
-                    {entry.leaveCount > 0 && (
-                      <div className={styles.awayBadge}>
-                        Уходил из игры: {entry.leaveCount} раз, {entry.awaySeconds} с
-                      </div>
-                    )}
-
-                    {matchedAnswer && areAnswersRevealed && (
-                      <div className={styles.matchedBadge}>
-                        ✓ {matchedAnswer.text} · {matchedAnswer.points} pts
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {captainAnswerEntries.length === 0 && (
-                <p className={styles.captainEmpty}>Нет подключенных капитанов.</p>
-              )}
-            </div>
-          </div>
+          {captainsPanel}
 
           <div className={styles.boardCol}>
             <h3 className={styles.colTitle}>Табло ответов</h3>
