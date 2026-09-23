@@ -260,15 +260,54 @@ router.put('/launches/:id', authMiddleware, requirePermission('EDIT'), async (re
 // worst case is one repeated push.
 const lastPushedQuestionByLaunch = new Map<string, string>();
 
+function pushToCaptains(launch: any, text: string) {
+  launch.teamGameInfo.forEach((t: any) => {
+    if (t.captainTelegramId) sendCaptainMessage(t.captainTelegramId, text, String(launch._id));
+  });
+}
+
 function notifyQuestionOpened(launch: any) {
   const launchId = String(launch._id);
   const questionId = launch.currentQuestionId ? String(launch.currentQuestionId) : null;
   if (!questionId || lastPushedQuestionByLaunch.get(launchId) === questionId) return;
   lastPushedQuestionByLaunch.set(launchId, questionId);
-  launch.teamGameInfo.forEach((t: any) => {
-    if (t.captainTelegramId) sendCaptainMessage(t.captainTelegramId, 'Вопрос открыт — отвечайте в игре!', launchId);
-  });
+  pushToCaptains(launch, 'Вопрос открыт — отвечайте в игре!');
 }
+
+// Round label as the host sees it in GameRounds.
+function roundLabel(round: any, index: number) {
+  return `Раунд ${round.orderNumber || index + 1}`;
+}
+
+// Host: "End Round" in RoundCheck. Closes the question on captains' phones,
+// marks the round as completed and pushes once — a repeated call only closes
+// the question again.
+router.post('/launches/:id/rounds/:roundId/finish', authMiddleware, requirePermission('EDIT'), async (req, res) => {
+  const { id, roundId } = req.params;
+  if (!mongoose.isValidObjectId(id) || !mongoose.isValidObjectId(roundId)) {
+    return res.status(400).json({ message: 'Invalid ID provided' });
+  }
+  try {
+    const launch = await Launch.findById(id).select('gameId completedRoundIds teamGameInfo');
+    if (!launch) return res.status(404).json({ message: 'Launch not found' });
+    const isNewlyCompleted = !launch.completedRoundIds.some(r => String(r) === roundId);
+
+    await Launch.updateOne(
+      { _id: id },
+      { $addToSet: { completedRoundIds: roundId }, $set: { isTimerActive: false }, $unset: { currentQuestionId: 1 } },
+    );
+
+    if (isNewlyCompleted) {
+      const game = await Game.findById(launch.gameId).select('rounds._id rounds.orderNumber').lean();
+      const index = game?.rounds.findIndex((r: any) => String(r._id) === roundId) ?? -1;
+      const label = index >= 0 ? roundLabel(game!.rounds[index], index) : 'Раунд';
+      pushToCaptains(launch, `${label} завершён. Ваши ответы — в игре.`);
+    }
+    res.json({ message: 'Round finished' });
+  } catch (e) {
+    res.status(400).json({ message: 'Failed to finish round' });
+  }
+});
 
 router.delete('/launches/:id', authMiddleware, requirePermission('CREATE'), async (req, res) => {
   const { id } = req.params;
@@ -328,9 +367,56 @@ router.get('/launches/:id/state', async (req, res) => {
       currentQuestionId: launch.currentQuestionId || null,
       isTimerActive: launch.isTimerActive,
       question,
+      completedRoundIds: launch.completedRoundIds || [],
     });
   } catch (e) {
     res.status(400).json({ message: 'Invalid ID provided' });
+  }
+});
+
+// Public: the "round finished" screen on the captain's phone. Only completed
+// rounds, only question titles and this team's own answers — no correct
+// answers, no points, no other teams. Fetched when completedRoundIds changes,
+// not on every poll.
+router.get('/launches/:id/summary', async (req, res) => {
+  const { id } = req.params;
+  const { teamId } = req.query;
+  if (!mongoose.isValidObjectId(id) || typeof teamId !== 'string' || !mongoose.isValidObjectId(teamId)) {
+    return res.status(400).json({ message: 'Invalid ID provided' });
+  }
+  try {
+    const launch = await Launch.findById(id).select('gameId completedRoundIds').lean();
+    if (!launch) return res.status(404).json({ message: 'Launch not found' });
+    const completed = new Set((launch.completedRoundIds || []).map(String));
+    if (completed.size === 0) return res.json([]);
+
+    const [game, teamAnswer] = await Promise.all([
+      Game.findById(launch.gameId)
+        .select('rounds._id rounds.orderNumber rounds.questions._id rounds.questions.title rounds.questions.orderNumber')
+        .lean(),
+      TeamAnswer.findOne({ launchId: id, teamId }).select('answers').lean(),
+    ]);
+    const answers = teamAnswer?.answers || [];
+
+    const rounds = (game?.rounds || [])
+      .map((round: any, index: number) => ({ round, index }))
+      .filter(({ round }) => completed.has(String(round._id)))
+      .map(({ round, index }) => ({
+        roundId: String(round._id),
+        title: roundLabel(round, index),
+        questions: (round.questions || []).map((q: any) => {
+          const entry = answers.find(a => a.roundId === String(round._id) && a.questionId === String(q._id));
+          return {
+            questionId: String(q._id),
+            title: q.title,
+            answerText: entry?.answerText || null,
+            wasAway: (entry?.leaveCount || 0) > 0,
+          };
+        }),
+      }));
+    res.json(rounds);
+  } catch (e) {
+    res.status(400).json({ message: 'Failed to load summary' });
   }
 });
 
