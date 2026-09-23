@@ -17,7 +17,7 @@ export default function GameRounds() {
   const [viewRoundIndex, setViewRoundIndex] = useState(0);
   const [updatingActiveRound, setUpdatingActiveRound] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
-  const [qrTab, setQrTab] = useState<'app' | 'launch'>('launch');
+  const [qrTab, setQrTab] = useState<'telegram' | 'app' | 'launch'>('telegram');
 
   const isAuthorized = !!user && (user.role === 'admin' || user.role === 'master');
 
@@ -48,6 +48,9 @@ export default function GameRounds() {
   if (!isAuthorized) return <Navigate to="/games" replace />;
 
   if (!game) return <div className={styles.status}>Loading...</div>;
+
+  // Launches created before the Telegram entry (or without a bot configured) have no Telegram QR.
+  const activeQrTab = qrTab === 'telegram' && !launch?.qrCodeTelegram ? 'launch' : qrTab;
 
   const rounds = game.rounds || [];
   const round = rounds[viewRoundIndex];
@@ -174,23 +177,37 @@ export default function GameRounds() {
             </button>
 
             <div className={styles.qrTabs}>
+              {launch?.qrCodeTelegram && (
+                <button
+                  type="button"
+                  className={`${styles.qrTabBtn} ${activeQrTab === 'telegram' ? styles.qrTabActive : ''}`}
+                  onClick={() => setQrTab('telegram')}
+                >
+                  Через Telegram
+                </button>
+              )}
               <button
                 type="button"
-                className={`${styles.qrTabBtn} ${qrTab === 'app' ? styles.qrTabActive : ''}`}
-                onClick={() => setQrTab('app')}
+                className={`${styles.qrTabBtn} ${activeQrTab === 'launch' ? styles.qrTabActive : ''}`}
+                onClick={() => setQrTab('launch')}
               >
-                1. Скачать PWA-приложение
+                Через браузер
               </button>
               <button
                 type="button"
-                className={`${styles.qrTabBtn} ${qrTab === 'launch' ? styles.qrTabActive : ''}`}
-                onClick={() => setQrTab('launch')}
+                className={`${styles.qrTabBtn} ${activeQrTab === 'app' ? styles.qrTabActive : ''}`}
+                onClick={() => setQrTab('app')}
               >
-                2. Присоединиться к игре
+                Скачать PWA
               </button>
             </div>
 
-            {qrTab === 'app' ? (
+            {activeQrTab === 'telegram' ? (
+              <>
+                <img src={launch?.qrCodeTelegram} alt="QR code" className={styles.qrImage} />
+                <p className={styles.qrHint}>Отсканируйте камерой телефона — игра откроется в Telegram</p>
+              </>
+            ) : activeQrTab === 'app' ? (
               launch?.qrCodeApp ? (
                 <>
                   <img src={launch.qrCodeApp} alt="QR code" className={styles.qrImage} />

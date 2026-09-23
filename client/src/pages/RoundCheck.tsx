@@ -93,7 +93,13 @@ export default function RoundCheck() {
     return teams.map((t: any) => {
       const teamAnswer = captainAnswers.find((a: any) => String(a.teamId?._id || a.teamId) === String(t.teamId));
       const entry = teamAnswer?.answers?.find((a: any) => a.roundId === round._id && a.questionId === question._id);
-      return { id: t.teamId, title: t.teamTitle, answer: entry?.answerText || null };
+      return {
+        id: t.teamId,
+        title: t.teamTitle,
+        answer: entry?.answerText || null,
+        leaveCount: entry?.leaveCount || 0,
+        awaySeconds: entry?.awaySeconds || 0,
+      };
     });
   }, [launchId, round, question, teams, captainAnswers]);
 
@@ -338,6 +344,12 @@ export default function RoundCheck() {
                         ? (areAnswersRevealed ? `«${entry.answer}»` : '••••••••')
                         : 'Ожидание ответа…'}
                     </span>
+
+                    {entry.leaveCount > 0 && (
+                      <div className={styles.awayBadge}>
+                        Уходил из игры: {entry.leaveCount} раз, {entry.awaySeconds} с
+                      </div>
+                    )}
 
                     {matchedAnswer && areAnswersRevealed && (
                       <div className={styles.matchedBadge}>

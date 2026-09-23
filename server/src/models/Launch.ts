@@ -6,6 +6,9 @@ export interface TeamGameInfo {
   teamPoints: number;
   teamTitle: string;
   capitanActive?: boolean;
+  // Telegram user id of the captain, set when they joined through the Mini App.
+  // Used only for bot pushes — never expose it in public responses.
+  captainTelegramId?: number;
   // Per-question score ledger (questionId -> points awarded). teamPoints must
   // always equal the sum of these values — re-saving a question overwrites its
   // entry instead of adding to teamPoints, keeping "Calculate & Save" idempotent.
@@ -23,6 +26,7 @@ export interface ILaunch extends Document {
   qrCode?: string;
   qrCodeApp?: string;
   qrCodeLaunch?: string;
+  qrCodeTelegram?: string;
   currentQuestionId?: string;
   isTimerActive: boolean;
 }
@@ -32,6 +36,7 @@ const TeamGameInfoSchema: Schema = new Schema({
   teamPoints: { type: Number, default: 0 },
   teamTitle: { type: String, required: true },
   capitanActive: { type: Boolean, default: false },
+  captainTelegramId: { type: Number, required: false },
   questionScores: { type: Schema.Types.Mixed, default: {} },
 });
 
@@ -46,6 +51,7 @@ const LaunchSchema: Schema = new Schema({
   qrCode: { type: String, required: false },
   qrCodeApp: { type: String, required: false },
   qrCodeLaunch: { type: String, required: false },
+  qrCodeTelegram: { type: String, required: false },
   currentQuestionId: { type: Schema.Types.ObjectId, required: false },
   isTimerActive: { type: Boolean, default: false },
 }, { timestamps: true });

@@ -272,6 +272,17 @@
   border-radius: 8px;
 }
 
+// Anti-cheat: the captain left the app while this question's timer ran.
+.awayBadge {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: var(--warning);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+}
+
 .captainAnswer {
   color: var(--text-primary);
   font-style: italic;
