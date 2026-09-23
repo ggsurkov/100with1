@@ -22,6 +22,7 @@ export interface Launch {
   qrCode?: string;
   qrCodeApp?: string;
   qrCodeLaunch?: string;
+  qrCodeTelegram?: string;
   currentQuestionId?: string;
   isTimerActive?: boolean;
 }

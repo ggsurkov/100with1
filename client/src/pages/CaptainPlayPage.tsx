@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import publicApi from '../services/publicApi';
 import { optimizeCloudinaryUrl } from '../utils/image';
 import { forceMute } from '../utils/audio';
+import { getTelegramWebApp } from '../utils/telegram';
 import styles from './CaptainPlayPage.module.scss';
 
 const LAUNCH_KEY = 'pinta_launch_id';
@@ -77,11 +78,14 @@ export default function CaptainPlayPage() {
     }
   }, [state?.currentQuestionId]);
 
+  // Inside Telegram the Mini App shell handles fullscreen and swipes (utils/telegram).
+  const [telegram] = useState(getTelegramWebApp);
+
   // Fullscreen API is unsupported on iOS Safari (only "add to home screen" gives
   // fullscreen there, via the manifest) — detect once rather than calling an
   // undefined method on every tap.
   const [isFullscreenSupported] = useState(
-    () => typeof document !== 'undefined'
+    () => typeof document !== 'undefined' && !telegram
       && !!(document.documentElement.requestFullscreen || (document.documentElement as any).webkitRequestFullscreen)
   );
   const [isFullscreen, setIsFullscreen] = useState(() => !!document.fullscreenElement);
@@ -110,7 +114,7 @@ export default function CaptainPlayPage() {
 
   // Tap-to-fullscreen welcome overlay — the first, most explicit user gesture
   // available, so the fullscreen request is as reliable as possible.
-  const [showFullscreenOverlay, setShowFullscreenOverlay] = useState(() => !document.fullscreenElement);
+  const [showFullscreenOverlay, setShowFullscreenOverlay] = useState(() => !telegram && !document.fullscreenElement);
 
   useEffect(() => {
     if (isFullscreen) setShowFullscreenOverlay(false);
@@ -142,21 +146,57 @@ export default function CaptainPlayPage() {
   }, []);
 
   // Anti-cheat: lock the current question if the captain leaves the tab/app
-  // while it's live — a common Google-the-answer pattern.
-  useEffect(() => {
-    const questionId = state?.currentQuestionId;
-    const isTimerActive = state?.isTimerActive;
-    if (!questionId || !isTimerActive) return;
+  // while it's live — a common Google-the-answer pattern — and report the
+  // leave and its duration to the server so the host sees it in RoundCheck.
+  // The listener stays attached for the whole session: the return event must
+  // be reported even if the timer ended while the captain was away.
+  const stateRef = useRef(state);
+  useEffect(() => { stateRef.current = state; }, [state]);
+  const awayRef = useRef<{ roundId: string; questionId: string; leftAt: number } | null>(null);
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
+  useEffect(() => {
+    if (!launchId || !teamId) return;
+
+    // keepalive lets the request finish while the browser suspends a hidden page.
+    const reportAway = (body: Record<string, unknown>) => {
+      fetch(`/api/launches/${launchId}/away`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamId, ...body }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+
+    const handleAwayChange = (isAway: boolean) => {
+      if (isAway) {
+        const s = stateRef.current;
+        if (!s?.isTimerActive || !s.currentRoundId || !s.currentQuestionId || awayRef.current) return;
+        const { currentRoundId: roundId, currentQuestionId: questionId } = s;
         setSubmittedQuestionIds(prev => new Set(prev).add(questionId));
         setCheatBlockedQuestionIds(prev => new Set(prev).add(questionId));
+        awayRef.current = { roundId, questionId, leftAt: Date.now() };
+        reportAway({ roundId, questionId, leave: true });
+      } else if (awayRef.current) {
+        const { roundId, questionId, leftAt } = awayRef.current;
+        awayRef.current = null;
+        reportAway({ roundId, questionId, awaySeconds: Math.round((Date.now() - leftAt) / 1000) });
       }
     };
+    const handleVisibilityChange = () => handleAwayChange(document.hidden);
+    // Telegram fires these when the Mini App is minimized to a chat, which does
+    // not always change document visibility. The awayRef guard ignores doubles.
+    const handleDeactivated = () => handleAwayChange(true);
+    const handleActivated = () => handleAwayChange(false);
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [state?.currentQuestionId, state?.isTimerActive]);
+    telegram?.onEvent('deactivated', handleDeactivated);
+    telegram?.onEvent('activated', handleActivated);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      telegram?.offEvent('deactivated', handleDeactivated);
+      telegram?.offEvent('activated', handleActivated);
+    };
+  }, [launchId, teamId, telegram]);
 
   const handleSubmit = async () => {
     if (!launchId || !teamId || !state?.currentRoundId || !state?.currentQuestionId || !answerText.trim()) return;
@@ -273,7 +313,8 @@ export default function CaptainPlayPage() {
                   localStorage.removeItem(LAUNCH_KEY);
                   localStorage.removeItem(TEAM_KEY);
                   localStorage.removeItem(TEAM_TITLE_KEY);
-                  navigate('/');
+                  if (telegram) telegram.close();
+                  else navigate('/');
                 }}
               >
                 Да, выйти
