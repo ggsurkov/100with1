@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import publicApi from '../services/publicApi';
+import { getTelegramWebApp } from '../utils/telegram';
 import { forceMute } from '../utils/audio';
 import styles from './TeamChoosePage.module.scss';
 
@@ -63,7 +64,11 @@ export default function TeamChoosePage() {
     }
     setSubmitting(true);
     try {
-      await publicApi.post(`/launches/${launchId}/join`, { teamId: pinTeam.teamId, pin });
+      const telegram = getTelegramWebApp();
+      // initData lets the server link this captain to their Telegram account for pushes.
+      await publicApi.post(`/launches/${launchId}/join`, { teamId: pinTeam.teamId, pin, initData: telegram?.initData });
+      // Telegram asks the captain once whether the bot may send them messages.
+      if (telegram?.isVersionAtLeast('6.9')) telegram.requestWriteAccess?.();
       localStorage.setItem(LAUNCH_KEY, launchId);
       localStorage.setItem(TEAM_KEY, pinTeam.teamId);
       localStorage.setItem(TEAM_TITLE_KEY, pinTeam.teamTitle);

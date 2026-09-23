@@ -5,6 +5,10 @@ export interface ITeamAnswerEntry {
   questionId: string;
   answerText: string;
   updatedAt: Date;
+  // Anti-cheat: how many times the captain left the app while this question's
+  // timer ran, and for how long in total. Informational — the host decides.
+  leaveCount?: number;
+  awaySeconds?: number;
 }
 
 export interface ITeamAnswer extends Document {
@@ -19,6 +23,8 @@ const TeamAnswerEntrySchema: Schema = new Schema({
   questionId: { type: String, required: true },
   answerText: { type: String, default: '' },
   updatedAt: { type: Date, default: Date.now },
+  leaveCount: { type: Number, default: 0 },
+  awaySeconds: { type: Number, default: 0 },
 }, { _id: false });
 
 const TeamAnswerSchema: Schema = new Schema({

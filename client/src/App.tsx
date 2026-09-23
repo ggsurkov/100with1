@@ -15,6 +15,7 @@ import RoundCheck from './pages/RoundCheck';
 import TeamChoosePage from './pages/TeamChoosePage';
 import CaptainPlayPage from './pages/CaptainPlayPage';
 import PwaAppPage from './pages/PwaAppPage';
+import TelegramEntryPage from './pages/TelegramEntryPage';
 import VersionBadge from './components/VersionBadge';
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
 
         {/* Team captain devices */}
         <Route path="/app" element={<PwaAppPage />} />
+        <Route path="/tg" element={<TelegramEntryPage />} />
         <Route path="/launch/:launchId/join" element={<TeamChoosePage />} />
         <Route path="/launch/:launchId/play" element={<CaptainPlayPage />} />
 

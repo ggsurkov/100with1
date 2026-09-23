@@ -12,6 +12,7 @@ import upload from '../middleware/upload';
 import { authMiddleware, requireRole, requirePermission, JWT_SECRET } from '../middleware/auth';
 import { getClientBaseUrl } from '../utils/url';
 import { callGenerateGame, normalizeGeneratedGame } from '../services/supabaseMlService';
+import { getMiniAppLink, verifyInitData, sendCaptainMessage } from '../services/telegram';
 
 const router = express.Router();
 
@@ -192,6 +193,7 @@ router.delete('/games/:id', authMiddleware, requirePermission('CREATE'), async (
 // Public: powers the /results page — exposes only finished games (final scores), no auth required.
 router.get('/launches', async (req, res) => {
   const launches = await Launch.find({ status: 'finished' })
+    .select('-teamGameInfo.captainTelegramId')
     .populate('gameId', 'title')
     .sort({ finishedAt: -1 });
   res.json(launches);
@@ -207,6 +209,8 @@ router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req
     const appUrl = `${clientUrl}/app`;
     const qrCodeLaunch = await QRCode.toDataURL(joinUrl);
     const qrCodeApp = await QRCode.toDataURL(appUrl);
+    const telegramUrl = getMiniAppLink(String(launchId));
+    const qrCodeTelegram = telegramUrl ? await QRCode.toDataURL(telegramUrl) : undefined;
 
     const launch = new Launch({
       ...req.body,
@@ -214,6 +218,7 @@ router.post('/launches', authMiddleware, requirePermission('CREATE'), async (req
       qrCode: qrCodeLaunch, // kept for backward compatibility with older clients
       qrCodeApp,
       qrCodeLaunch,
+      qrCodeTelegram,
     });
     await launch.save();
     res.json(launch);
@@ -242,11 +247,28 @@ router.put('/launches/:id', authMiddleware, requirePermission('EDIT'), async (re
       update.finishedAt = new Date();
     }
     const launch = await Launch.findByIdAndUpdate(id, update, { new: true });
+    if (launch && update.isTimerActive === true) notifyQuestionOpened(launch);
     res.json(launch);
   } catch (e) {
     res.status(400).json({ message: 'Failed to update launch' });
   }
 });
+
+// Push to Telegram captains when the host starts the timer of a new question.
+// RoundStart sends isTimerActive: true again after a pause, so the last pushed
+// question is remembered per launch. In memory on purpose: after a restart the
+// worst case is one repeated push.
+const lastPushedQuestionByLaunch = new Map<string, string>();
+
+function notifyQuestionOpened(launch: any) {
+  const launchId = String(launch._id);
+  const questionId = launch.currentQuestionId ? String(launch.currentQuestionId) : null;
+  if (!questionId || lastPushedQuestionByLaunch.get(launchId) === questionId) return;
+  lastPushedQuestionByLaunch.set(launchId, questionId);
+  launch.teamGameInfo.forEach((t: any) => {
+    if (t.captainTelegramId) sendCaptainMessage(t.captainTelegramId, 'Вопрос открыт — отвечайте в игре!', launchId);
+  });
+}
 
 router.delete('/launches/:id', authMiddleware, requirePermission('CREATE'), async (req, res) => {
   const { id } = req.params;
@@ -314,7 +336,7 @@ router.get('/launches/:id/state', async (req, res) => {
 
 router.post('/launches/:id/join', async (req, res) => {
   const { id } = req.params;
-  const { teamId, pin } = req.body;
+  const { teamId, pin, initData } = req.body;
   if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
   if (!teamId || !mongoose.isValidObjectId(teamId) || !pin) {
     return res.status(400).json({ message: 'teamId and pin are required' });
@@ -332,6 +354,10 @@ router.post('/launches/:id/join', async (req, res) => {
     }
 
     teamInfo.capitanActive = true;
+    // Present only when the captain joined from the Telegram Mini App. A missing
+    // or invalid signature is not an error: the PIN already proves the team.
+    const telegramId = verifyInitData(initData);
+    if (telegramId) teamInfo.captainTelegramId = telegramId;
     await launch.save();
 
     const existingAnswer = await TeamAnswer.findOne({ launchId: id, teamId });
@@ -372,6 +398,41 @@ router.put('/launches/:id/answers', async (req, res) => {
     res.json(teamAnswer);
   } catch (e) {
     res.status(400).json({ message: 'Failed to save answer' });
+  }
+});
+
+// Public: CaptainPlayPage reports that the captain left the app during a live
+// question. `leave: true` is sent when the page goes hidden, `awaySeconds` when
+// it comes back. Nothing is returned — the phone must not learn anything here.
+router.post('/launches/:id/away', async (req, res) => {
+  const { id } = req.params;
+  const { teamId, roundId, questionId, leave, awaySeconds } = req.body;
+  if (!id || !mongoose.isValidObjectId(id)) return res.status(400).json({ message: 'Invalid ID provided' });
+  if (!teamId || !mongoose.isValidObjectId(teamId) || !roundId || !questionId) {
+    return res.status(400).json({ message: 'teamId, roundId and questionId are required' });
+  }
+  // Clamp to one hour so a broken or forged client cannot write garbage.
+  const seconds = Math.min(Math.max(Math.round(Number(awaySeconds) || 0), 0), 3600);
+  try {
+    let teamAnswer = await TeamAnswer.findOne({ launchId: id, teamId });
+    if (!teamAnswer) {
+      const launch = await Launch.findById(id).select('gameId');
+      if (!launch) return res.status(404).json({ message: 'Launch not found' });
+      teamAnswer = await TeamAnswer.create({ launchId: id, gameId: launch.gameId, teamId, answers: [] });
+    }
+
+    let entry = teamAnswer.answers.find((a: any) => a.roundId === roundId && a.questionId === questionId);
+    if (!entry) {
+      teamAnswer.answers.push({ roundId, questionId, answerText: '', updatedAt: new Date() });
+      entry = teamAnswer.answers[teamAnswer.answers.length - 1];
+    }
+    if (leave) entry.leaveCount = (entry.leaveCount || 0) + 1;
+    entry.awaySeconds = (entry.awaySeconds || 0) + seconds;
+    await teamAnswer.save();
+
+    res.status(204).end();
+  } catch (e) {
+    res.status(400).json({ message: 'Failed to save away event' });
   }
 });
 
